@@ -1643,6 +1643,9 @@ function renderPlantFullDetail(p){
           <button data-action="open-move" data-id="${p.id}" class="px-3 py-2 rounded-xl bg-white border border-stone-200 text-xs text-stone-600 hover:bg-stone-50">
             <i class="fa-solid fa-box mr-1"></i>換盆／分株
           </button>
+          <button data-action="open-death" data-id="${p.id}" class="px-3 py-2 rounded-xl bg-red-500 text-white text-xs hover:bg-red-600">
+            <i class="fa-solid fa-skull-crossbones mr-1"></i>標記死亡
+          </button>
           <button data-action="open-sold" data-id="${p.id}" class="px-3 py-2 rounded-xl bg-amber-500 text-white text-xs hover:bg-amber-600">
             <i class="fa-solid fa-people-arrows mr-1"></i>轉讓／出售
           </button>` : ""}
