@@ -838,22 +838,99 @@ function markSoldConfirm(plantId, soldDate, soldTo){
 function markDeadStart(plantId){
   openModal("death", { plantId });
 }
-function markDeadConfirm(plantId, deathDate, deathCause){
-  openModal("weatherLoading", {});
-  setTimeout(()=>{
-    const plant = state.plants.find(p=>p.id===plantId);
-    const weather = state.apiOffline ? null : {
-      temp: (Math.random()*15+20).toFixed(1),
-      humidity: Math.round(Math.random()*40+40)
+
+// 天氣資料：優先查 Open-Meteo 歷史氣象；查不到時才使用明確標示的備援估算。
+async function fetchDeathWeather(plant, deathDate){
+  const fallback = () => ({
+    temp: Number((Math.random()*12+22).toFixed(1)),
+    humidity: Math.round(Math.random()*25+55),
+    weatherCode: null,
+    weatherText: "備援估算（未取得歷史 API 資料）",
+    location: plant.location || "未設定地點",
+    source: "fallback",
+    date: deathDate
+  });
+
+  if(state.apiOffline) return fallback();
+
+  try{
+    let latitude = null, longitude = null, resolvedLocation = plant.location || "";
+
+    // 若植物地點本身是城市／地區名稱，直接用 Open-Meteo 地理編碼查詢。
+    if(resolvedLocation){
+      const geoUrl = "https://geocoding-api.open-meteo.com/v1/search?name=" + encodeURIComponent(resolvedLocation) + "&count=1&language=zh&format=json";
+      const geoRes = await fetch(geoUrl);
+      if(geoRes.ok){
+        const geo = await geoRes.json();
+        const hit = geo?.results?.[0];
+        if(hit){
+          latitude = Number(hit.latitude);
+          longitude = Number(hit.longitude);
+          resolvedLocation = [hit.name, hit.admin1].filter(Boolean).join("，");
+        }
+      }
+    }
+
+    // 植物地點常是「陽台／後院溫室」這類室內標籤，無法地理編碼時，
+    // 嘗試使用瀏覽器目前位置；若使用者拒絕，再走備援估算。
+    if((latitude==null || longitude==null) && navigator.geolocation){
+      const pos = await new Promise(resolve=>navigator.geolocation.getCurrentPosition(resolve, ()=>resolve(null), {enableHighAccuracy:false, timeout:2500, maximumAge:86400000}));
+      if(pos){
+        latitude = pos.coords.latitude;
+        longitude = pos.coords.longitude;
+        resolvedLocation = "裝置所在位置附近";
+      }
+    }
+
+    if(latitude==null || longitude==null) return fallback();
+
+    const url = "https://archive-api.open-meteo.com/v1/archive?latitude=" + latitude + "&longitude=" + longitude + "&start_date=" + encodeURIComponent(deathDate) + "&end_date=" + encodeURIComponent(deathDate) + "&hourly=temperature_2m,relative_humidity_2m,weather_code&timezone=auto";
+    const res = await fetch(url);
+    if(!res.ok) throw new Error("weather api " + res.status);
+    const data = await res.json();
+    const temps = (data?.hourly?.temperature_2m || []).filter(v=>Number.isFinite(Number(v))).map(Number);
+    const hums = (data?.hourly?.relative_humidity_2m || []).filter(v=>Number.isFinite(Number(v))).map(Number);
+    const codes = (data?.hourly?.weather_code || []).filter(v=>Number.isFinite(Number(v))).map(Number);
+    if(!temps.length) throw new Error("no weather data");
+
+    const avg = arr => arr.length ? arr.reduce((a,b)=>a+b,0)/arr.length : null;
+    const code = codes.length ? Math.round(codes.reduce((a,b)=>a+b,0)/codes.length) : null;
+    const weatherNames = {
+      0:"晴朗",1:"大致晴朗",2:"局部多雲",3:"陰天",45:"霧",48:"霧凇",
+      51:"小毛雨",53:"毛雨",55:"大毛雨",61:"小雨",63:"中雨",65:"大雨",
+      71:"小雪",73:"中雪",75:"大雪",80:"小陣雨",81:"陣雨",82:"大陣雨",
+      95:"雷雨",96:"雷雨伴冰雹",99:"強雷雨伴冰雹"
     };
-    plant.status = "已死亡";
-    plant.deathDate = deathDate;
-    plant.deathCause = deathCause || "未填寫死因"; // 這裡新增族譜邏輯：死因將顯示在族譜紅燈節點上
-    plant.deathWeather = weather;
-    closeModal();
-    showToast(state.apiOffline ? "已標記死亡（氣象 API 離線，未帶入數據）" : "已標記死亡並帶入氣象數據", "fa-skull");
-    render();
-  }, 1200);
+    return {
+      temp: Number(avg(temps).toFixed(1)),
+      humidity: hums.length ? Math.round(avg(hums)) : null,
+      weatherCode: code,
+      weatherText: weatherNames[code] || "歷史氣象",
+      location: resolvedLocation,
+      latitude: Number(latitude.toFixed(5)),
+      longitude: Number(longitude.toFixed(5)),
+      source: "Open-Meteo",
+      date: deathDate
+    };
+  }catch(err){
+    console.warn("死亡日期氣象查詢失敗，改用備援資料", err);
+    return fallback();
+  }
+}
+
+async function markDeadConfirm(plantId, deathDate, deathCause){
+  openModal("weatherLoading", {});
+  const plant = state.plants.find(p=>p.id===plantId);
+  if(!plant) return;
+
+  const weather = await fetchDeathWeather(plant, deathDate);
+  plant.status = "已死亡";
+  plant.deathDate = deathDate;
+  plant.deathCause = deathCause || "未填寫死因"; // 死因顯示於族譜紅燈節點
+  plant.deathWeather = weather;
+  closeModal();
+  showToast(weather.source === "Open-Meteo" ? "已標記死亡，已帶入歷史天氣" : "已標記死亡，已建立備援天氣紀錄", "fa-skull");
+  render();
 }
 
 function movePlantSubmit(plantId, location, potSize, date, reason, splitCount){
@@ -1706,6 +1783,26 @@ function renderPlantFullDetail(p){
               </div>` : `<p class="text-xs text-stone-400">目前尚未建立子代資料。</p>`}
           </section>
         </div>
+
+        ${p.status==="已死亡" ? `
+        <section class="mt-4 rounded-2xl bg-red-50/70 border border-red-100 p-4">
+          <div class="flex items-center gap-2 mb-3">
+            <span class="w-8 h-8 rounded-xl bg-red-100 text-red-600 grid place-items-center"><i class="fa-solid fa-cloud-sun"></i></span>
+            <div>
+              <h2 class="font-semibold text-red-900 text-sm">死亡紀錄與當日天氣</h2>
+              <p class="text-[11px] text-red-700/70 mt-0.5">死亡日期：${esc(p.deathDate || "－")}　｜　死因：${esc(p.deathCause || "未填寫")}</p>
+            </div>
+          </div>
+          ${p.deathWeather ? `
+            <div class="grid sm:grid-cols-4 gap-2">
+              <div class="rounded-xl bg-white border border-red-100 p-3"><p class="text-[10px] text-stone-400">平均溫度</p><b class="text-stone-700">${esc(p.deathWeather.temp)} °C</b></div>
+              <div class="rounded-xl bg-white border border-red-100 p-3"><p class="text-[10px] text-stone-400">平均濕度</p><b class="text-stone-700">${p.deathWeather.humidity!=null ? esc(p.deathWeather.humidity)+" %" : "－"}</b></div>
+              <div class="rounded-xl bg-white border border-red-100 p-3"><p class="text-[10px] text-stone-400">天氣</p><b class="text-stone-700">${esc(p.deathWeather.weatherText || "－")}</b></div>
+              <div class="rounded-xl bg-white border border-red-100 p-3"><p class="text-[10px] text-stone-400">資料來源</p><b class="text-stone-700">${esc(p.deathWeather.source || "－")}</b></div>
+            </div>
+            <p class="text-[10px] text-stone-400 mt-2">${p.deathWeather.location ? "地點："+esc(p.deathWeather.location)+"　" : ""}${p.deathWeather.latitude!=null ? "座標："+esc(p.deathWeather.latitude)+"，"+esc(p.deathWeather.longitude) : ""}</p>
+          ` : `<p class="text-xs text-stone-400">尚無天氣紀錄。</p>`}
+        </section>` : ""}
 
         <section class="mt-4 rounded-2xl bg-sky-50/70 border border-sky-100 p-4">
           <div class="flex items-center justify-between gap-3 flex-wrap">
