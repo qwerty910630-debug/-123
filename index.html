@@ -472,6 +472,58 @@ function nextPlantId(){
 function todayStr(){ return new Date().toISOString().slice(0,10); }
 function esc(s){ return (s==null?"":String(s)).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
 
+let pendingAddPlantPhoto = null;
+let pendingAddPlantPhotoProcessing = false;
+
+// 新增植物照片：先轉成可直接嵌入 HTML 的 Data URL，並縮小大照片，
+// 避免使用 blob/object URL 導致換頁或重新開啟後圖片失效。
+function previewAddPlantPhoto(e){
+  const file = e.target.files && e.target.files[0];
+  const preview = document.getElementById("ap-photo-preview");
+  pendingAddPlantPhoto = null;
+  pendingAddPlantPhotoProcessing = false;
+  if(!file){
+    if(preview) preview.innerHTML = `<span class="text-xs text-stone-400">尚未選擇圖片</span>`;
+    return;
+  }
+  if(!file.type.startsWith("image/")){
+    if(preview) preview.innerHTML = `<span class="text-xs text-red-500">請選擇圖片檔案</span>`;
+    return;
+  }
+
+  pendingAddPlantPhotoProcessing = true;
+  if(preview) preview.innerHTML = `<span class="text-xs text-stone-400"><i class="fa-solid fa-spinner fa-spin mr-1"></i>照片處理中…</span>`;
+
+  const reader = new FileReader();
+  reader.onerror = function(){
+    pendingAddPlantPhotoProcessing = false;
+    if(preview) preview.innerHTML = `<span class="text-xs text-red-500">照片讀取失敗，請重新選擇</span>`;
+  };
+  reader.onload = function(ev){
+    const img = new Image();
+    img.onload = function(){
+      const maxSide = 1400;
+      const scale = Math.min(1, maxSide / Math.max(img.naturalWidth || img.width, img.naturalHeight || img.height));
+      const w = Math.max(1, Math.round((img.naturalWidth || img.width) * scale));
+      const h = Math.max(1, Math.round((img.naturalHeight || img.height) * scale));
+      const canvas = document.createElement("canvas");
+      canvas.width = w; canvas.height = h;
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(img, 0, 0, w, h);
+      // JPEG 大幅降低手機照片的容量，讓資料能穩定放在植物資料裡。
+      pendingAddPlantPhoto = canvas.toDataURL("image/jpeg", 0.82);
+      pendingAddPlantPhotoProcessing = false;
+      if(preview) preview.innerHTML = `<img src="${pendingAddPlantPhoto}" class="w-full h-full object-cover rounded-xl" alt="新增植物照片預覽">`;
+    };
+    img.onerror = function(){
+      pendingAddPlantPhotoProcessing = false;
+      if(preview) preview.innerHTML = `<span class="text-xs text-red-500">照片格式無法讀取，請重新選擇</span>`;
+    };
+    img.src = ev.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
 /* =========================================================================
    種子資料
 ========================================================================= */
@@ -544,6 +596,45 @@ let state = {
   gallerySelectedId: null,
   galleryEventType: "一般紀錄"
 };
+
+/* =========================================================================
+   本機自動保存：重整／關閉網頁後保留植物、照片、族譜與其他操作資料
+   使用 localStorage，不改變原有操作流程。
+========================================================================= */
+const PLANT_MANAGER_STORAGE_KEY = "plant_manager_state_v1";
+function saveState(){
+  try{
+    const snapshot = JSON.parse(JSON.stringify(state));
+    // UI 暫態狀態不需要保存，避免重新開啟時直接進入某株詳情或彈窗。
+    snapshot.selectedPlantId = null;
+    snapshot.modal = null;
+    snapshot.voice = { text:"", listening:false, parsed:null, queryText:"", queryResult:null };
+    localStorage.setItem(PLANT_MANAGER_STORAGE_KEY, JSON.stringify(snapshot));
+  }catch(err){
+    console.warn("植物資料保存失敗", err);
+  }
+}
+function loadState(){
+  try{
+    const raw = localStorage.getItem(PLANT_MANAGER_STORAGE_KEY);
+    if(!raw) return false;
+    const saved = JSON.parse(raw);
+    if(!saved || !Array.isArray(saved.plants)) return false;
+    state = Object.assign(state, saved);
+    state.plants = Array.isArray(state.plants) ? state.plants : [];
+    state.plants.forEach(p=>{
+      p.photos = Array.isArray(p.photos) ? p.photos : [];
+      p.moveHistory = Array.isArray(p.moveHistory) ? p.moveHistory : [];
+    });
+    return true;
+  }catch(err){
+    console.warn("植物資料讀取失敗，使用原始資料", err);
+    return false;
+  }
+}
+loadState();
+window.addEventListener("beforeunload", saveState);
+
 let pieChartInstance = null;
 
 /* =========================================================================
@@ -642,7 +733,7 @@ function addPlant(data){
     status:"存活", location:data.location, potSize:Number(data.potSize)||4,
     parentId, motherId, fatherId, generation:normalizedGeneration,
     propagationMethod: data.propagationMethod || (parentId||motherId ? "分株" : "花市購入"),
-    photos:[],
+    photos: data.photos || [],
     moveHistory:[{location:data.location, potSize:Number(data.potSize)||4, date:data.acquireDate}]
   };
   state.plants.push(newPlant);
@@ -899,7 +990,11 @@ function expenseBreakdown(){
 /* =========================================================================
    Modal 系統
 ========================================================================= */
-function openModal(type, payload){ state.modal = { type, payload }; renderModal(); }
+function openModal(type, payload){
+  if(type==="addPlant") pendingAddPlantPhoto = null;
+  state.modal = { type, payload };
+  renderModal();
+}
 function closeModal(){ state.modal = null; renderModal(); }
 
 function renderModal(){
@@ -945,6 +1040,19 @@ function renderModal(){
         ${field("取得日期", `<input id="ap-date" type="date" class="${inputCls}" value="${todayStr()}" />`)}
         ${field("場地", `<select id="ap-location" class="${inputCls}">${LOCATIONS.map(l=>`<option value="${l}">${l}</option>`).join('')}</select>`)}
         ${field("盆器吋數", `<input id="ap-pot" type="number" class="${inputCls}" value="4" />`)}
+        <div class="sm:col-span-2">
+          <span class="text-xs font-medium text-stone-500 mb-1 block">植物照片</span>
+          <div class="flex flex-col sm:flex-row gap-3 items-start">
+            <label class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-100 text-sm font-medium cursor-pointer hover:bg-emerald-100 transition-all">
+              <i class="fa-solid fa-camera"></i> 拍照／選擇圖片
+              <input id="ap-photo" type="file" accept="image/*" capture="environment" class="hidden" onchange="previewAddPlantPhoto(event)" />
+            </label>
+            <div id="ap-photo-preview" class="w-28 h-20 rounded-xl border border-dashed border-stone-200 bg-stone-50 grid place-items-center overflow-hidden">
+              <span class="text-xs text-stone-400">尚未選擇圖片</span>
+            </div>
+          </div>
+          <p class="text-[10px] text-stone-400 mt-1">新增後會直接顯示在「植物總表」，也會成為這株植物的第一張照片。</p>
+        </div>
         ${field("繁殖方式", `<select id="ap-propagation" class="${inputCls}" onchange="toggleLineageFields()">
             <option value="花市購入">外購（無血緣關係）</option>
             <option value="分株">自家繁殖 - 分株</option>
@@ -1298,7 +1406,8 @@ function renderPlants(){
         : "bg-red-100 text-red-600";
 
     const photo = thumb
-      ? `<img src="${thumb}" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" alt="${esc(p.name)}">`
+      ? `<img src="${thumb}" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" alt="${esc(p.name)}" onerror="this.style.display='none';this.nextElementSibling?.classList.remove('hidden')">`
+        + `<div class="hidden absolute inset-0 grid place-items-center bg-gradient-to-br from-emerald-50 via-lime-50 to-stone-100"><i class="fa-solid fa-seedling text-emerald-500 text-5xl"></i></div>`
       : `<div class="w-full h-full grid place-items-center bg-gradient-to-br from-emerald-50 via-lime-50 to-stone-100">
            <i class="fa-solid fa-seedling text-emerald-500 text-5xl"></i>
          </div>`;
@@ -1343,7 +1452,13 @@ function renderPlants(){
           </div>
         </button>
 
-        <div class="px-4 pb-4">
+        <div class="px-4 pb-4 space-y-2">
+          <label class="w-full cursor-pointer block">
+            <span class="w-full py-2 rounded-xl border border-emerald-200 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-xs font-medium transition-all flex items-center justify-center gap-1.5">
+              <i class="fa-solid fa-camera"></i> 新增圖片
+            </span>
+            <input type="file" accept="image/*" capture="environment" class="hidden" onchange="handlePlantListPhotoUpload(event, '${p.id}')" />
+          </label>
           <button data-action="select-plant" data-id="${p.id}"
             class="w-full py-2.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-medium transition-all">
             查看詳情 <i class="fa-solid fa-arrow-right ml-1"></i>
@@ -2306,12 +2421,29 @@ function renderGallery(){
       </div>`:""}
     </div>`;
 }
+function handlePlantListPhotoUpload(e, plantId){
+  const file = e.target.files && e.target.files[0];
+  if(!file) return;
+  const plant = state.plants.find(p=>p.id===plantId);
+  if(!plant) return;
+  const reader = new FileReader();
+  reader.onload = function(ev){
+    plant.photos = Array.isArray(plant.photos) ? plant.photos : [];
+    plant.photos.push({id:uid("ph"), url:ev.target.result, date:todayStr(), eventType:"植物總表新增"});
+    showToast("圖片已加入「" + plant.name + "」", "fa-image");
+    renderPlants();
+  };
+  reader.readAsDataURL(file);
+  e.target.value = "";
+}
+
 function handlePhotoUpload(e){
   const file = e.target.files && e.target.files[0];
   if(!file || !state.gallerySelectedId) return;
   const url = URL.createObjectURL(file);
   const plant = state.plants.find(p=>p.id===state.gallerySelectedId);
   plant.photos.push({id:uid("ph"), url, date:todayStr(), eventType:state.galleryEventType});
+  saveState();
   showToast("照片已綁定至事件", "fa-image");
   render();
 }
@@ -2570,7 +2702,7 @@ function renderMain(){
   else if(state.tab==="gallery") renderGallery();
   else if(state.tab==="reports") renderReports();
 }
-function render(){ renderSidebar(); renderMain(); }
+function render(){ renderSidebar(); renderMain(); saveState(); }
 
 /* =========================================================================
    小型 UI 輔助（modal 內部欄位切換）
@@ -2650,6 +2782,10 @@ document.addEventListener("click", function(e){
   else if(action==="submit-add-plant"){
     const name = document.getElementById("ap-name").value.trim();
     if(!name) return;
+    if(pendingAddPlantPhotoProcessing){
+      showToast("照片還在處理中，請稍候", "fa-image");
+      return;
+    }
     // 這裡新增族譜邏輯：讀取繁殖方式與血緣欄位一併寫入
     addPlant({
       name,
@@ -2660,11 +2796,13 @@ document.addEventListener("click", function(e){
       acquireDate: document.getElementById("ap-date").value,
       location: document.getElementById("ap-location").value,
       potSize: document.getElementById("ap-pot").value,
+      photos: pendingAddPlantPhoto ? [{id:uid("ph"), url:pendingAddPlantPhoto, date:todayStr(), eventType:"建檔"}] : [],
       propagationMethod: document.getElementById("ap-propagation").value,
       parentId: document.getElementById("ap-parent")?.value || null,
       motherId: document.getElementById("ap-mother")?.value || null,
       fatherId: document.getElementById("ap-father")?.value || null
     });
+    pendingAddPlantPhoto = null;
   }
   else if(action==="open-move"){ openModal("move", { plantId: el.dataset.id }); }
   else if(action==="submit-move"){
