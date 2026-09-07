@@ -16,7 +16,2955 @@
 </script>
 <script src="https://cdn.tailwindcss.com"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></scri<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>植物管家 · 植物管理系統</title>
+<script>
+  // 這裡新增：過濾 Tailwind CDN 在正式環境顯示的提醒訊息，不影響其他 console 訊息
+  (function(){
+    const originalWarn = console.warn;
+    console.warn = function(...args){
+      if(args.length && typeof args[0] === "string" && args[0].includes("cdn.tailwindcss.com")) return;
+      originalWarn.apply(console, args);
+    };
+  })();
+</script>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
+<style>
+  html { -webkit-text-size-adjust: 100%; }
+  body { font-family: ui-sans-serif, system-ui, "Noto Sans TC", sans-serif; overflow-x: hidden; -webkit-tap-highlight-color: transparent; }
+  .font-serif-cjk { font-family: ui-serif, Georgia, "Noto Serif TC", serif; }
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-thumb { background: #a7c4b0; border-radius: 8px; }
+  @keyframes fadeIn { from { opacity:0; transform: translateY(8px);} to {opacity:1; transform:translateY(0);} }
+  .fade-in { animation: fadeIn .25s ease-out; }
+  /* 這裡新增 RWD 邏輯：圖片/canvas/svg 永遠不超出容器寬度，避免手機版橫向溢出 */
+  img, canvas, svg { max-width: 100%; }
+  /* 這裡新增 RWD 邏輯：手機版側邊欄以 transform 做滑出式選單（off-canvas drawer） */
+  #sidebar { transition: transform .3s ease; }
+  @media (max-width: 767px) {
+    #sidebar.sidebar-open { transform: translateX(0) !important; }
+  }
+
+  /* 視覺升級：保留既有 Tailwind 結構與所有互動，只調整色彩、層次與微互動 */
+  :root { --forest:#123d32; --leaf:#2f7a57; --mint:#dff3df; --sun:#f5c85b; --paper:#f8faf2; }
+  body {
+    color:#243b31;
+    background:
+      radial-gradient(circle at 83% 6%, rgba(202,231,149,.42) 0 12%, transparent 30%),
+      radial-gradient(circle at 25% 100%, rgba(255,222,147,.22) 0 16%, transparent 38%),
+      linear-gradient(135deg,#f4f8ee 0%,#fcfcf8 48%,#eef5e8 100%) !important;
+  }
+  body::before { content:""; position:fixed; inset:0; pointer-events:none; opacity:.38; z-index:-1;
+    background-image:radial-gradient(#6fa679 0.7px,transparent .7px); background-size:20px 20px; }
+  #sidebar { background:linear-gradient(165deg,#0e3a30 0%,#155541 48%,#0c3029 100%) !important; box-shadow:14px 0 40px rgba(21,60,45,.16); }
+  #sidebar::after { content:""; position:absolute; width:230px; height:230px; border:1px solid rgba(220,244,190,.15); border-radius:50%; right:-125px; bottom:48px; pointer-events:none; }
+  #sidebar .font-serif-cjk { letter-spacing:.08em; }
+  #nav-list button { position:relative; overflow:hidden; }
+  #nav-list button::before { content:""; width:6px; height:6px; border-radius:50%; background:#f7d46d; opacity:0; transition:.2s; position:absolute; left:13px; }
+  #nav-list button:hover::before { opacity:1; }
+  #nav-list button:hover { background:rgba(136,205,143,.13) !important; transform:translateX(3px) !important; }
+  #nav-list button[class*="from-amber"] { box-shadow:0 10px 22px rgba(3,30,22,.28) !important; }
+  main { max-width:1280px !important; padding-top:2.4rem !important; }
+  #main-content > div > div:first-child h1 { letter-spacing:.08em; color:var(--forest) !important; }
+  #main-content > div > div:first-child p { color:#6f8073 !important; }
+  #main-content .bg-white\/80, #main-content .bg-white\/70, #main-content .bg-white\/60 {
+    background:rgba(255,255,252,.76) !important; border-color:rgba(255,255,255,.9) !important;
+    box-shadow:0 13px 32px rgba(37,78,53,.09) !important;
+  }
+  #main-content .rounded-3xl { border-radius:1.65rem !important; }
+  #main-content .bg-stone-50 { background:#f5f8ee !important; }
+  #main-content input, #main-content select, #modal-root input, #modal-root select, #modal-root textarea {
+    border-color:#d9e6d4 !important; background-color:rgba(255,255,253,.9) !important;
+    box-shadow:inset 0 1px 2px rgba(26,67,45,.03);
+  }
+  #main-content input:focus, #main-content select:focus, #modal-root input:focus, #modal-root select:focus, #modal-root textarea:focus {
+    border-color:#79af7e !important; box-shadow:0 0 0 3px rgba(101,168,106,.14) !important;
+  }
+  #main-content button:not([data-action="switch-tab"]), #modal-root button { transition:transform .2s ease,box-shadow .2s ease,filter .2s ease !important; }
+  #main-content button:hover, #modal-root button:hover { filter:saturate(1.08); }
+  #main-content .bg-gradient-to-br.from-emerald-500, #main-content .bg-gradient-to-br.from-amber-400 { box-shadow:0 8px 16px rgba(28,93,57,.18) !important; }
+  #main-content .aspect-square.rounded-2xl { border:1px solid rgba(255,255,255,.68); }
+  #modal-root > div { backdrop-filter:blur(7px); }
+  #modal-root .bg-white\/95 { border:1px solid rgba(255,255,255,.8); box-shadow:0 25px 70px rgba(11,52,36,.25) !important; }
+  #toast-root > div { border-color:#cce7c5 !important; box-shadow:0 16px 38px rgba(21,75,47,.2) !important; }
+  @media (min-width:768px) { main { padding-left:2.75rem !important; padding-right:2.75rem !important; } }
+  @media (max-width:767px) { main { padding-top:1.3rem !important; } #sidebar { box-shadow:18px 0 45px rgba(7,41,29,.32); } }
+</style>
+
+<style>
+/* ===== 家族族譜：珍稀植物繁育管理專用樣式 ===== */
+.genealogy-breeding { display:grid; gap:18px; }
+.genealogy-toolbar { display:flex; flex-wrap:wrap; gap:10px; align-items:center; }
+.genealogy-tree-card,.genealogy-info-card,.genealogy-trace-card { background:#fff; border:1px solid #e5e7eb; border-radius:18px; padding:20px; box-shadow:0 6px 18px rgba(0,0,0,.04); }
+.genealogy-tree { overflow:auto; padding:24px 8px 32px; }
+.g-tree { display:flex; flex-direction:column; align-items:center; min-width:760px; }
+.g-node { position:relative; min-width:190px; max-width:220px; padding:14px; border:2px solid #d1d5db; border-radius:16px; background:#fff; cursor:pointer; transition:.2s; }
+.g-node:hover { transform:translateY(-2px); box-shadow:0 8px 20px rgba(0,0,0,.08); }
+.g-node.selected,.g-node.trace { border-color:#16a34a; box-shadow:0 0 0 4px rgba(22,163,74,.10); }
+.g-node .gen { font-size:12px; color:#6b7280; margin-top:4px; }
+.g-node .method { display:inline-block; margin-top:8px; padding:3px 8px; border-radius:999px; background:#f0fdf4; color:#15803d; font-size:12px; }
+.g-children { display:flex; gap:34px; justify-content:center; position:relative; margin-top:34px; }
+.g-children:before { content:""; position:absolute; top:-18px; left:10%; right:10%; height:1px; background:#d1d5db; }
+.g-child-wrap { position:relative; padding-top:18px; }
+.g-child-wrap:before { content:""; position:absolute; top:0; left:50%; width:1px; height:18px; background:#d1d5db; }
+.g-trace-list { display:grid; gap:8px; }
+.g-trace-item { padding:10px 12px; border-radius:12px; background:#f9fafb; border-left:4px solid #d1d5db; }
+.g-trace-item.active { background:#f0fdf4; border-left-color:#16a34a; }
+.g-stat-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; }
+.g-stat { background:#f9fafb; border-radius:14px; padding:13px; }
+.g-stat b { display:block; font-size:20px; margin-top:4px; }
+@media(max-width:800px){.g-stat-grid{grid-template-columns:repeat(2,1fr)}}
+</style>
+
+<script>
+/* ===== 珍稀植物繁育管理：只供家族族譜頁使用 ===== */
+const RARE_BREEDING_DATA = [
+  {id:'PL-001', name:'二叉鹿角蕨 #001', species:'二叉鹿角蕨', generation:1, method:'原始母株', parent:null, rarity:5},
+  {id:'PL-002', name:'二叉鹿角蕨 A-01', species:'二叉鹿角蕨', generation:2, method:'側芽繁殖', parent:'PL-001', rarity:4},
+  {id:'PL-003', name:'二叉鹿角蕨 A-02', species:'二叉鹿角蕨', generation:2, method:'側芽繁殖', parent:'PL-001', rarity:4},
+  {id:'PL-004', name:'二叉鹿角蕨 A-01-01', species:'二叉鹿角蕨', generation:3, method:'分株繁殖', parent:'PL-002', rarity:4},
+  {id:'PL-005', name:'二叉鹿角蕨 A-01-01-01', species:'二叉鹿角蕨', generation:4, method:'分株繁殖', parent:'PL-004', rarity:5}
+];
+
+function genealogyNodeHTML(p, selectedId){
+  const stars='★'.repeat(p.rarity)+'☆'.repeat(5-p.rarity);
+  return `<div class="g-node ${p.id===selectedId?'selected':''}" onclick="selectGenealogyPlant('${p.id}')">
+    <div style="font-size:22px">🌱</div>
+    <strong>${p.name}</strong>
+    <div style="font-size:13px;color:#6b7280">${p.species}</div>
+    <div class="gen">第 ${p.generation} 代 · ${p.id}</div>
+    <span class="method">${p.method}</span>
+    <div style="margin-top:8px;font-size:12px">珍稀程度 ${stars}</div>
+  </div>`;
+}
+function buildGenealogyTree(selectedId='PL-005'){
+  const byId=Object.fromEntries(RARE_BREEDING_DATA.map(x=>[x.id,x]));
+  const children={}; RARE_BREEDING_DATA.forEach(x=>{if(x.parent)(children[x.parent]??=[]).push(x.id)});
+  function branch(id){
+    const p=byId[id], kids=children[id]||[];
+    return `<div class="g-child-wrap">${genealogyNodeHTML(p,selectedId)}
+      ${kids.length?`<div class="g-children">${kids.map(branch).join('')}</div>`:''}
+    </div>`;
+  }
+  const root=RARE_BREEDING_DATA.find(x=>!x.parent);
+  return `<div class="g-tree">${branch(root.id)}</div>`;
+}
+function genealogyTrace(selectedId='PL-005'){
+  const byId=Object.fromEntries(RARE_BREEDING_DATA.map(x=>[x.id,x]));
+  const path=[]; let cur=byId[selectedId];
+  while(cur){path.unshift(cur);cur=cur.parent?byId[cur.parent]:null;}
+  return path.map((p,i)=>`<div class="g-trace-item ${i===0||i===path.length-1?'active':''}">
+    <b>${i===0?'🌿 第一代母株':'🌱 第 '+p.generation+' 代子代'}</b><br>
+    ${p.name}<span style="color:#6b7280"> · ${p.method}</span>
+  </div>`).join('<div style="text-align:center;color:#9ca3af">↓</div>');
+}
+function selectGenealogyPlant(id){
+  const p=RARE_BREEDING_DATA.find(x=>x.id===id); if(!p)return;
+  const detail=document.getElementById('genealogy-detail');
+  const trace=document.getElementById('genealogy-trace');
+  if(detail) detail.innerHTML=`<div style="font-size:13px;color:#6b7280">目前選取</div>
+    <h3 style="margin:6px 0">${p.name}</h3>
+    <div class="g-stat-grid">
+      <div class="g-stat">品種<b>${p.species}</b></div>
+      <div class="g-stat">世代<b>第 ${p.generation} 代</b></div>
+      <div class="g-stat">繁殖方式<b>${p.method}</b></div>
+      <div class="g-stat">珍稀等級<b>${'★'.repeat(p.rarity)}</b></div>
+    </div>
+    <div style="margin-top:12px;color:#4b5563">母株：${p.parent ? (RARE_BREEDING_DATA.find(x=>x.id===p.parent)?.name||p.parent) : '原始母株'}</div>`;
+  if(trace) trace.innerHTML=`<h3 style="margin-top:0">🔎 血統追蹤</h3>
+    <p style="color:#6b7280">點擊任一子代，可沿血統線反查最原始母株。</p>
+    <div class="g-trace-list">${genealogyTrace(id)}</div>
+    <div style="margin-top:14px;padding:12px;border-radius:12px;background:#f0fdf4;color:#166534">
+      ✓ 此植株可追溯至第一代母株：<b>${RARE_BREEDING_DATA[0].name}</b>
+    </div>`;
+  const tree=document.getElementById('genealogy-tree');
+  if(tree) tree.innerHTML=buildGenealogyTree(id);
+}
+function renderBreedingGenealogyPage(){
+  return `<div class="genealogy-breeding">
+    <div>
+      <div style="font-size:13px;color:#6b7280">珍稀植物繁育管理</div>
+      <h2 style="margin:4px 0 8px">🌿 家族族譜</h2>
+      <p style="color:#6b7280;margin:0">管理鹿角蕨親本、側芽與分株，建立多世代繁育脈絡。</p>
+    </div>
+    <div class="genealogy-toolbar">
+      <select style="padding:10px 12px;border:1px solid #d1d5db;border-radius:10px">
+        <option>全部品種</option><option>二叉鹿角蕨</option><option>安哥拉鹿角蕨</option><option>皇冠鹿角蕨</option><option>巨獸鹿角蕨</option>
+      </select>
+      <select style="padding:10px 12px;border:1px solid #d1d5db;border-radius:10px">
+        <option>全部世代</option><option>第一代</option><option>第二代</option><option>第三代</option><option>第四代</option>
+      </select>
+      <span style="padding:10px 12px;background:#f0fdf4;color:#166534;border-radius:10px">🌱 已建立 ${RARE_BREEDING_DATA.length} 株繁育關聯</span>
+    </div>
+    <div class="g-stat-grid">
+      <div class="g-stat">原生種管理<b>18 種</b></div>
+      <div class="g-stat">繁育植株<b>${RARE_BREEDING_DATA.length} 株</b></div>
+      <div class="g-stat">目前世代<b>第 4 代</b></div>
+      <div class="g-stat">可追溯母株<b>100%</b></div>
+    </div>
+    <div class="genealogy-tree-card">
+      <h3 style="margin-top:0">🌳 繁育系譜樹狀圖</h3>
+      <p style="color:#6b7280">點擊任意節點查看繁殖方式，並反查最原始母株。</p>
+      <div id="genealogy-tree" class="genealogy-tree">${buildGenealogyTree()}</div>
+    </div>
+    <div id="genealogy-detail" class="genealogy-info-card"></div>
+    <div id="genealogy-trace" class="genealogy-trace-card"></div>
+  </div>`;
+}
+</script>
+
+
+<style id="breeding-genealogy-v2-css">
+.bgv2{display:grid;gap:18px}
+.bgv2-head{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap}
+.bgv2-kicker{font-size:13px;color:#6b7280}.bgv2-title{font-size:28px;font-weight:800;margin:3px 0}
+.bgv2-sub{color:#6b7280;margin:0}
+.bgv2-btn{border:1px solid #d1d5db;background:#fff;padding:9px 14px;border-radius:10px;cursor:pointer}
+.bgv2-btn.active{background:#166534;color:#fff;border-color:#166534}
+.bgv2-tabs{display:flex;gap:8px}
+.bgv2-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.bgv2-stat{background:#fff;border:1px solid #e5e7eb;border-radius:16px;padding:16px}
+.bgv2-stat-label{font-size:13px;color:#6b7280}.bgv2-stat-num{font-size:25px;font-weight:800;margin-top:5px}
+.bgv2-layout{display:grid;grid-template-columns:330px 1fr;gap:18px}
+.bgv2-panel{background:#fff;border:1px solid #e5e7eb;border-radius:18px;padding:18px}
+.bgv2-section-title{font-weight:800;font-size:17px;margin:0 0 12px}
+.bgv2-search{width:100%;box-sizing:border-box;border:1px solid #d1d5db;border-radius:10px;padding:10px 12px;margin-bottom:12px}
+.bgv2-plant{border:1px solid #e5e7eb;border-radius:14px;padding:13px;margin-bottom:10px;cursor:pointer}
+.bgv2-plant.selected{border-color:#22c55e;background:#f0fdf4}
+.bgv2-plant-top{display:flex;justify-content:space-between;gap:8px}.bgv2-plant-name{font-weight:700}
+.bgv2-pill{display:inline-block;font-size:11px;padding:3px 7px;border-radius:999px;background:#f0fdf4;color:#166534;margin-top:7px}
+.bgv2-stars{font-size:12px;letter-spacing:-2px}
+.bgv2-detail-head{display:flex;justify-content:space-between;gap:14px;align-items:center;flex-wrap:wrap}
+.bgv2-badge{padding:6px 10px;border-radius:999px;background:#ecfdf5;color:#166534;font-weight:700;font-size:12px}
+.bgv2-progress{height:9px;background:#e5e7eb;border-radius:99px;overflow:hidden;margin:9px 0}
+.bgv2-progress>span{display:block;height:100%;width:80%;background:#22c55e;border-radius:99px}
+.bgv2-timeline{margin-top:20px;position:relative;padding-left:25px}
+.bgv2-timeline:before{content:"";position:absolute;left:8px;top:5px;bottom:5px;width:2px;background:#d1d5db}
+.bgv2-event{position:relative;padding:0 0 22px 18px}.bgv2-event:before{content:"";position:absolute;left:-1px;top:3px;width:11px;height:11px;border-radius:50%;background:#22c55e;border:3px solid #dcfce7}
+.bgv2-event-date{font-size:12px;color:#6b7280}.bgv2-event-title{font-weight:800;margin:3px 0}.bgv2-event-desc{font-size:13px;color:#6b7280}
+.bgv2-bottom{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.bgv2-family{overflow:auto;padding:10px 4px 20px}
+.bgv2-tree{min-width:650px;text-align:center}
+.bgv2-node{display:inline-block;min-width:150px;border:2px solid #d1d5db;border-radius:14px;padding:12px;background:#fff;cursor:pointer}
+.bgv2-node:hover,.bgv2-node.selected{border-color:#22c55e;box-shadow:0 0 0 4px #dcfce7}
+.bgv2-node-method{font-size:11px;color:#166534;margin-top:5px}
+.bgv2-branch{display:flex;justify-content:center;gap:28px;margin-top:28px;position:relative}
+.bgv2-branch:before{content:"";position:absolute;top:-14px;left:18%;right:18%;height:1px;background:#d1d5db}
+.bgv2-trace{display:grid;gap:7px}.bgv2-trace-item{padding:9px 11px;border-radius:11px;background:#f9fafb;border-left:4px solid #d1d5db}
+.bgv2-trace-item.active{background:#f0fdf4;border-left-color:#22c55e}
+.bgv2-achieve{display:flex;gap:10px;flex-wrap:wrap}
+.bgv2-ach{border:1px solid #e5e7eb;border-radius:13px;padding:10px 12px;background:#fff}
+.bgv2-ach strong{display:block}.bgv2-ach small{color:#6b7280}
+@media(max-width:900px){.bgv2-layout,.bgv2-bottom{grid-template-columns:1fr}.bgv2-stats{grid-template-columns:repeat(2,1fr)}}
+</style>
+
+<script id="breeding-genealogy-v2-js">
+const BGV2_PLANTS=[
+ {id:"PL-001",name:"二叉鹿角蕨 #001",species:"二叉鹿角蕨",gen:1,method:"原始母株",parent:null,rarity:5,date:"2025/03/12"},
+ {id:"PL-002",name:"二叉鹿角蕨 A-01",species:"二叉鹿角蕨",gen:2,method:"側芽繁殖",parent:"PL-001",rarity:4,date:"2025/08/20"},
+ {id:"PL-003",name:"二叉鹿角蕨 A-02",species:"二叉鹿角蕨",gen:2,method:"側芽繁殖",parent:"PL-001",rarity:4,date:"2025/08/20"},
+ {id:"PL-004",name:"二叉鹿角蕨 A-01-01",species:"二叉鹿角蕨",gen:3,method:"分株繁殖",parent:"PL-002",rarity:4,date:"2026/02/14"},
+ {id:"PL-005",name:"二叉鹿角蕨 A-01-01-01",species:"二叉鹿角蕨",gen:4,method:"分株繁殖",parent:"PL-004",rarity:5,date:"2026/06/18"}
+];
+let BGV2_SELECTED="PL-005";
+function bgv2Stars(n){return "★".repeat(n)+"☆".repeat(5-n)}
+function bgv2Path(id){
+ const map=Object.fromEntries(BGV2_PLANTS.map(p=>[p.id,p])), out=[]; let p=map[id];
+ while(p){out.unshift(p);p=p.parent?map[p.parent]:null} return out;
+}
+function bgv2PlantCard(p){
+ return `<div class="bgv2-plant ${p.id===BGV2_SELECTED?"selected":""}" onclick="BGV2_select('${p.id}')">
+  <div class="bgv2-plant-top"><span class="bgv2-plant-name">🌿 ${p.name}</span><span class="bgv2-stars">${bgv2Stars(p.rarity)}</span></div>
+  <div style="font-size:12px;color:#6b7280;margin-top:4px">第 ${p.gen} 代 · ${p.id}</div>
+  <span class="bgv2-pill">${p.method}</span>
+ </div>`;
+}
+function bgv2Timeline(id){
+ const path=bgv2Path(id);
+ return path.map((p,i)=>`<div class="bgv2-event">
+  <div class="bgv2-event-date">${p.date}</div>
+  <div class="bgv2-event-title">${i===0?"🌿 建立原始母株":p.method==="側芽繁殖"?"🌱 發現並建立側芽":"✂️ 完成分株並建立子代"}</div>
+  <div class="bgv2-event-desc">${p.name} · 第 ${p.gen} 代 · ${p.method}</div>
+ </div>`).join("");
+}
+function bgv2Trace(id){
+ return bgv2Path(id).map((p,i)=>`<div class="bgv2-trace-item ${i===0||i===bgv2Path(id).length-1?"active":""}">
+   <b>${i===0?"🌿 第一代母株":"🌱 第 "+p.gen+" 代"}</b>　${p.name}
+ </div>`).join('<div style="text-align:center;color:#9ca3af">↓</div>');
+}
+function bgv2TreeNode(p){
+ return `<div class="bgv2-node ${p.id===BGV2_SELECTED?"selected":""}" onclick="BGV2_select('${p.id}')">
+   <div style="font-size:20px">🌱</div><b>${p.name}</b>
+   <div style="font-size:12px;color:#6b7280">第 ${p.gen} 代</div>
+   <div class="bgv2-node-method">${p.method}</div>
+ </div>`;
+}
+function bgv2Tree(){
+ const a=BGV2_PLANTS;
+ return `<div class="bgv2-tree">
+  ${bgv2TreeNode(a[0])}
+  <div class="bgv2-branch">${bgv2TreeNode(a[1])}${bgv2TreeNode(a[2])}</div>
+  <div style="margin-top:28px">${bgv2TreeNode(a[3])}</div>
+  <div style="margin-top:28px">${bgv2TreeNode(a[4])}</div>
+ </div>`;
+}
+function BGV2_select(id){
+ BGV2_SELECTED=id;
+ const p=BGV2_PLANTS.find(x=>x.id===id);
+ const detail=document.getElementById("bgv2-detail"), trace=document.getElementById("bgv2-trace"), tree=document.getElementById("bgv2-tree"), list=document.getElementById("bgv2-list");
+ if(!p)return;
+ if(list)list.innerHTML=BGV2_PLANTS.map(bgv2PlantCard).join("");
+ if(tree)tree.innerHTML=bgv2Tree();
+ if(detail)detail.innerHTML=`<div class="bgv2-detail-head">
+   <div><div class="bgv2-kicker">目前選取</div><h3 style="margin:3px 0">${p.name}</h3><div style="color:#6b7280;font-size:13px">${p.species} · ${p.id}</div></div>
+   <span class="bgv2-badge">第 ${p.gen} 代</span>
+  </div>
+  <div style="margin-top:15px"><b>繁育旅程 80%</b><div class="bgv2-progress"><span></span></div><small style="color:#6b7280">完成母株、側芽、分株與子代建立紀錄</small></div>
+  <div class="bgv2-timeline">${bgv2Timeline(id)}</div>`;
+ if(trace)trace.innerHTML=`<h3 class="bgv2-section-title">🔎 血統追溯</h3>
+   <p style="color:#6b7280;font-size:13px">從目前植株一路反查最原始母株。</p>
+   <div class="bgv2-trace">${bgv2Trace(id)}</div>
+   <div style="margin-top:12px;padding:11px;border-radius:11px;background:#f0fdf4;color:#166534">✓ 最初母株：<b>${BGV2_PLANTS[0].name}</b></div>`;
+}
+function renderBreedingGenealogyV2(){
+ return `<div class="bgv2">
+  <div class="bgv2-head"><div><div class="bgv2-kicker">珍稀植物 × 繁育管理</div><div class="bgv2-title">🌿 家族族譜</div><p class="bgv2-sub">從母株、側芽到子代，完整保存每一代的繁育履歷。</p></div>
+   <div class="bgv2-tabs"><button class="bgv2-btn active">繁育履歷</button><button class="bgv2-btn" onclick="document.getElementById('bgv2-tree-anchor').scrollIntoView({behavior:'smooth'})">系譜圖</button></div>
+  </div>
+  <div class="bgv2-stats"><div class="bgv2-stat"><div class="bgv2-stat-label">珍稀品種</div><div class="bgv2-stat-num">8 種</div></div><div class="bgv2-stat"><div class="bgv2-stat-label">繁育植株</div><div class="bgv2-stat-num">31 株</div></div><div class="bgv2-stat"><div class="bgv2-stat-label">目前最高世代</div><div class="bgv2-stat-num">第 4 代</div></div><div class="bgv2-stat"><div class="bgv2-stat-label">血統可追溯</div><div class="bgv2-stat-num">100%</div></div></div>
+  <div class="bgv2-layout">
+   <div class="bgv2-panel"><h3 class="bgv2-section-title">🌱 我的繁育植物</h3><input class="bgv2-search" placeholder="搜尋植物名稱或編號..." oninput="BGV2_filter(this.value)"><div id="bgv2-list">${BGV2_PLANTS.map(bgv2PlantCard).join("")}</div></div>
+   <div id="bgv2-detail" class="bgv2-panel"></div>
+  </div>
+  <div id="bgv2-tree-anchor" class="bgv2-bottom">
+   <div class="bgv2-panel"><h3 class="bgv2-section-title">🌳 系譜圖</h3><p style="color:#6b7280;font-size:13px">點擊節點查看該植株的繁育資訊。</p><div id="bgv2-tree" class="bgv2-family">${bgv2Tree()}</div></div>
+   <div id="bgv2-trace" class="bgv2-panel"></div>
+  </div>
+  <div class="bgv2-panel"><h3 class="bgv2-section-title">🏆 繁育成就進度</h3><div class="bgv2-achieve">
+   <div class="bgv2-ach"><strong>🏆 繁育大師</strong><small>✓ 完成第一次分株</small></div>
+   <div class="bgv2-ach"><strong>🌱 三代傳承</strong><small>✓ 已建立第三代</small></div>
+   <div class="bgv2-ach"><strong>🌿 血脈延續</strong><small>3 / 5 株子代</small></div>
+   <div class="bgv2-ach"><strong>👑 四代傳承者</strong><small>✓ 已達第四代</small></div>
+  </div></div>
+ </div>`;
+}
+function BGV2_filter(q){
+ const list=document.getElementById("bgv2-list"); if(!list)return;
+ q=q.toLowerCase(); list.innerHTML=BGV2_PLANTS.filter(p=>(p.name+p.id+p.species).toLowerCase().includes(q)).map(bgv2PlantCard).join("");
+}
+</script>
+
+</head>
+<body class="bg-gradient-to-br from-emerald-50 via-white to-stone-50 min-h-screen">
+
+<!-- 這裡新增 RWD 邏輯：手機版頂部列（含漢堡選單按鈕），md 以上隱藏 -->
+<header class="md:hidden sticky top-0 z-30 bg-emerald-950 text-white flex items-center justify-between px-4 py-3 shadow-lg">
+  <div class="flex items-center gap-2.5">
+    <div class="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center shrink-0">
+      <span class="text-sm" aria-hidden="true">🌿</span>
+    </div>
+    <span class="font-serif-cjk text-sm">植物管家</span>
+  </div>
+  <button id="mobile-nav-toggle" aria-label="開啟選單" class="w-10 h-10 rounded-xl bg-emerald-900/70 flex items-center justify-center active:scale-90 transition-all duration-300">
+    <span class="text-lg leading-none" aria-hidden="true">☰</span>
+  </button>
+</header>
+
+<!-- 這裡新增 RWD 邏輯：手機版選單開啟時的背景遮罩，點擊可關閉選單 -->
+<div id="mobile-nav-backdrop" class="fixed inset-0 bg-stone-900/50 z-40 hidden md:hidden"></div>
+
+<div class="flex flex-col md:flex-row min-h-screen">
+  <!-- Sidebar -->
+  <aside id="sidebar" class="fixed md:sticky top-0 left-0 z-50 w-72 max-w-[85vw] md:w-64 md:max-w-none shrink-0 bg-emerald-950 h-screen p-5 flex flex-col gap-1 overflow-y-auto -translate-x-full md:translate-x-0">
+    <div class="flex items-center justify-between pb-6 pt-2">
+      <div class="flex items-center gap-2.5 px-1">
+        <div class="w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center">
+          <span class="text-base" aria-hidden="true">🌿</span>
+        </div>
+        <div>
+          <p class="font-serif-cjk text-white text-[15px] leading-tight">植物管家</p>
+          <p class="text-[11px] text-emerald-300/60">植物管理系統</p>
+        </div>
+      </div>
+      <!-- 這裡新增 RWD 邏輯：手機版選單內的關閉按鈕，md 以上隱藏 -->
+      <button id="mobile-nav-close" aria-label="關閉選單" class="md:hidden w-8 h-8 rounded-lg bg-emerald-900/60 flex items-center justify-center active:scale-90 transition-all duration-300 shrink-0">
+        <span class="text-emerald-100 text-sm leading-none" aria-hidden="true">✕</span>
+      </button>
+    </div>
+
+    <div class="px-1 mb-4">
+      <div class="flex items-center justify-between text-[11px] text-emerald-200 mb-1">
+        <span class="flex items-center gap-1"><span aria-hidden="true">⭐</span> <span id="level-label">Lv.1 園丁</span></span>
+        <span id="xp-label">20/100</span>
+      </div>
+      <div class="h-2 rounded-full bg-emerald-900 overflow-hidden">
+        <div id="xp-bar" class="h-full bg-gradient-to-r from-amber-400 to-emerald-400 transition-all duration-500" style="width:20%"></div>
+      </div>
+    </div>
+
+    <p class="px-4 text-[11px] text-emerald-400/50 mb-1">功能選單</p>
+    <nav id="nav-list" class="flex flex-col gap-0.5"></nav>
+
+    <div class="mt-auto pt-4">
+      <button id="api-toggle" class="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-xs transition-all duration-300 hover:scale-105 active:scale-95 bg-emerald-900/60 text-emerald-100">
+        <span id="api-toggle-icon" aria-hidden="true">📶</span>
+        <span id="api-toggle-label">外部 API 連線正常</span>
+      </button>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <main class="flex-1 min-w-0 p-4 sm:p-6 md:p-8 max-w-6xl mx-auto w-full">
+    <div id="offline-banner" class="hidden mb-4 bg-orange-100 border border-orange-300 text-orange-800 text-sm rounded-2xl px-4 py-3 items-center gap-2">
+      <i class="fa-solid fa-triangle-exclamation"></i>
+      外部服務（氣象 API / 語音辨識）目前離線，核心的植物管理、庫存查詢與換盆功能仍可正常使用。
+    </div>
+    <div id="main-content"></div>
+  </main>
+</div>
+
+<div id="modal-root"></div>
+<div id="toast-root"></div>
+
+<script>
+/* =========================================================================
+   常數
+========================================================================= */
+const NATIVE_STAGHORN_SPECIES = [
+  "Platycerium bifurcatum","Platycerium superbum","Platycerium veitchii",
+  "Platycerium willinckii","Platycerium wandae","Platycerium hillii",
+  "Platycerium andinum","Platycerium quadridichotomum","Platycerium ridleyi",
+  "Platycerium holttumii","Platycerium coronarium","Platycerium wallichii",
+  "Platycerium elephantotis","Platycerium stemaria","Platycerium alcicorne",
+  "Platycerium madagascariense","Platycerium ellisii","Platycerium grande"
+];
+
+const CN_RATIO_DEFAULTS = [
+  { id:"m1", name:"咖啡渣", ratio:20 },
+  { id:"m2", name:"果皮菜葉", ratio:25 },
+  { id:"m3", name:"落葉", ratio:60 },
+  { id:"m4", name:"木屑", ratio:400 },
+  { id:"m5", name:"稻草乾草", ratio:80 },
+  { id:"m6", name:"茶葉渣", ratio:25 }
+];
+
+const BADGES = [
+  { id:"b1", name:"新手園丁", desc:"新增第一株植物", icon:"fa-seedling" },
+  { id:"b2", name:"堆肥見習生", desc:"第一次投入堆肥料", icon:"fa-recycle" },
+  { id:"b3", name:"小小商人", desc:"完成第一筆銷售", icon:"fa-sack-dollar" },
+  { id:"b4", name:"繁育大師", desc:"完成一次分株", icon:"fa-sitemap" },
+  { id:"b5", name:"溫室主人", desc:"植物總數達到 10 株", icon:"fa-trophy" },
+  { id:"b6", name:"語音達人", desc:"使用語音建檔成功", icon:"fa-microphone" }
+];
+
+const LOCATIONS = ["前院棚架","後院溫室","陽台","室內窗邊","頂樓花園"];
+
+const NAV = [
+  { id:"dashboard", label:"溫室總覽", icon:"📊" },
+  { id:"plants", label:"植物總表", icon:"🪴" },
+  { id:"genealogy", label:"家族族譜", icon:"🌳" },
+  { id:"market", label:"花市與採購", icon:"🏪" },
+  { id:"materials", label:"耗材與堆肥", icon:"🍂" },
+  { id:"sales", label:"銷售與收成", icon:"💰" },
+  { id:"voice", label:"AI 語音管理", icon:"🎙️" },
+  { id:"reports", label:"報表匯出", icon:"📥" }
+];
+
+/* =========================================================================
+   工具函式
+========================================================================= */
+function uid(p){ return (p||"") + Math.random().toString(36).slice(2,9); }
+
+function nextPlantId(){
+  const nums = state.plants.map(p => parseInt(p.id.replace("P",""),10)).filter(n=>!isNaN(n));
+  const next = (nums.length ? Math.max(...nums) : 0) + 1;
+  return "P" + String(next).padStart(5,"0");
+}
+function todayStr(){ return new Date().toISOString().slice(0,10); }
+function esc(s){ return (s==null?"":String(s)).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+
+let pendingAddPlantPhoto = null;
+let pendingAddPlantPhotoProcessing = false;
+
+// 新增植物照片：先轉成可直接嵌入 HTML 的 Data URL，並縮小大照片，
+// 避免使用 blob/object URL 導致換頁或重新開啟後圖片失效。
+function previewAddPlantPhoto(e){
+  const file = e.target.files && e.target.files[0];
+  const preview = document.getElementById("ap-photo-preview");
+  pendingAddPlantPhoto = null;
+  pendingAddPlantPhotoProcessing = false;
+  if(!file){
+    if(preview) preview.innerHTML = `<span class="text-xs text-stone-400">尚未選擇圖片</span>`;
+    return;
+  }
+  if(!file.type.startsWith("image/")){
+    if(preview) preview.innerHTML = `<span class="text-xs text-red-500">請選擇圖片檔案</span>`;
+    return;
+  }
+
+  pendingAddPlantPhotoProcessing = true;
+  if(preview) preview.innerHTML = `<span class="text-xs text-stone-400"><i class="fa-solid fa-spinner fa-spin mr-1"></i>照片處理中…</span>`;
+
+  const reader = new FileReader();
+  reader.onerror = function(){
+    pendingAddPlantPhotoProcessing = false;
+    if(preview) preview.innerHTML = `<span class="text-xs text-red-500">照片讀取失敗，請重新選擇</span>`;
+  };
+  reader.onload = function(ev){
+    const img = new Image();
+    img.onload = function(){
+      const maxSide = 1400;
+      const scale = Math.min(1, maxSide / Math.max(img.naturalWidth || img.width, img.naturalHeight || img.height));
+      const w = Math.max(1, Math.round((img.naturalWidth || img.width) * scale));
+      const h = Math.max(1, Math.round((img.naturalHeight || img.height) * scale));
+      const canvas = document.createElement("canvas");
+      canvas.width = w; canvas.height = h;
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(img, 0, 0, w, h);
+      // JPEG 大幅降低手機照片的容量，讓資料能穩定放在植物資料裡。
+      pendingAddPlantPhoto = canvas.toDataURL("image/jpeg", 0.82);
+      pendingAddPlantPhotoProcessing = false;
+      if(preview) preview.innerHTML = `<img src="${pendingAddPlantPhoto}" class="w-full h-full object-cover rounded-xl" alt="新增植物照片預覽">`;
+    };
+    img.onerror = function(){
+      pendingAddPlantPhotoProcessing = false;
+      if(preview) preview.innerHTML = `<span class="text-xs text-red-500">照片格式無法讀取，請重新選擇</span>`;
+    };
+    img.src = ev.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+/* =========================================================================
+   種子資料
+========================================================================= */
+function seedPlants(){
+  // 這裡新增族譜邏輯：每株植物新增 motherId / fatherId（有性繁殖／交配種用），
+  // parentId 保留給無性繁殖（分株／側芽）。同時補上 soldTo（出售對象）與 deathCause（死因）欄位。
+  return [
+    { id:"P00001", name:"初代母株 - 蝙蝠蕨", species:NATIVE_STAGHORN_SPECIES[1], isStaghorn:true,
+      source:"mk1", price:1800, acquireDate:"2023-03-10", status:"存活", location:"後院溫室",
+      potSize:12, parentId:null, motherId:null, fatherId:null, generation:1, propagationMethod:"原生採購", photos:[],
+      moveHistory:[{location:"後院溫室",potSize:8,date:"2023-03-10"},{location:"後院溫室",potSize:12,date:"2024-01-15"}] },
+    { id:"P00002", name:"初代母株 - 蝙蝠蕨-子代1", species:NATIVE_STAGHORN_SPECIES[1], isStaghorn:true,
+      source:"mk1", price:0, acquireDate:"2024-06-01", status:"存活", location:"後院溫室",
+      potSize:6, parentId:"P00001", motherId:null, fatherId:null, generation:2, propagationMethod:"分株", photos:[],
+      moveHistory:[{location:"後院溫室",potSize:6,date:"2024-06-01"}] },
+    { id:"P00003", name:"初代母株 - 蝙蝠蕨-子代1-側芽A", species:NATIVE_STAGHORN_SPECIES[1], isStaghorn:true,
+      source:"mk1", price:0, acquireDate:"2025-04-20", status:"存活", location:"陽台",
+      potSize:4, parentId:"P00002", motherId:null, fatherId:null, generation:3, propagationMethod:"側芽", photos:[],
+      moveHistory:[{location:"陽台",potSize:4,date:"2025-04-20"}] },
+    { id:"P00004", name:"龜背芋 - 大葉", species:"龜背芋", isStaghorn:false,
+      source:"mk2", price:650, acquireDate:"2024-02-14", status:"存活", location:"室內窗邊",
+      potSize:8, parentId:null, motherId:null, fatherId:null, generation:1, propagationMethod:"花市購入", photos:[],
+      moveHistory:[{location:"室內窗邊",potSize:8,date:"2024-02-14"}] },
+    { id:"P00005", name:"薄荷 - 陽台盆", species:"薄荷", isStaghorn:false,
+      source:"mk2", price:80, acquireDate:"2024-05-01", status:"已死亡", deathDate:"2024-08-02", deathCause:"夏季高溫悶熱，疑似根部腐爛",
+      deathWeather:{temp:36.8,humidity:42}, location:"陽台", potSize:4, parentId:null, motherId:null, fatherId:null, generation:1,
+      propagationMethod:"花市購入", photos:[], moveHistory:[{location:"陽台",potSize:4,date:"2024-05-01"}] },
+    { id:"P00006", name:"交配種 - 蝙蝠蕨 x 大鹿角蕨", species:"Platycerium bifurcatum x superbum", isStaghorn:true,
+      source:"mk1", price:0, acquireDate:"2025-02-10", status:"存活", location:"後院溫室",
+      potSize:5, parentId:null, motherId:"P00001", fatherId:null, generation:2, propagationMethod:"交配種", photos:[],
+      moveHistory:[{location:"後院溫室",potSize:5,date:"2025-02-10"}] },
+    { id:"P00007", name:"初代母株 - 蝙蝠蕨-子代1-側芽B", species:NATIVE_STAGHORN_SPECIES[1], isStaghorn:true,
+      source:"mk1", price:0, acquireDate:"2025-05-02", status:"已出售", soldDate:"2025-08-01", soldTo:"隔壁陳太太",
+      location:"陽台", potSize:4, parentId:"P00002", motherId:null, fatherId:null, generation:3, propagationMethod:"側芽", photos:[],
+      moveHistory:[{location:"陽台",potSize:4,date:"2025-05-02"}] }
+  ];
+}
+
+/* =========================================================================
+   全域狀態
+========================================================================= */
+let state = {
+  tab: "dashboard",
+  plants: seedPlants(),
+  markets: [
+    { id:"mk1", name:"私人賣家 - 阿福鹿角蕨" },
+    { id:"mk2", name:"建國花市" },
+    { id:"mk3", name:"內湖花市" }
+  ],
+  materials: [
+    { id:"mt1", name:"培養土", stock:15, unit:"包", unitCost:150 },
+    { id:"mt2", name:"緩效肥", stock:6, unit:"罐", unitCost:220 },
+    { id:"mt3", name:"水苔", stock:3, unit:"包", unitCost:90 }
+  ],
+  cnPresets: CN_RATIO_DEFAULTS.map(x=>({...x})),
+  compostBins: [
+    { id:"cb1", name:"高溫堆肥箱 A", type:"高溫", inputs:[], targetWeight:5000 },
+    { id:"cb2", name:"低溫蚓箱 B", type:"低溫", inputs:[], targetWeight:3000 }
+  ],
+  sales: [],
+  crops: [ { id:"cr1", name:"小番茄", initialCost:300, harvests:[] } ],
+  unlockedBadges: [],
+  // 成就用：seedPlants() 的示範植物不算使用者新增的第一株
+  hasAddedFirstPlant: false,
+  xp: 20,
+  apiOffline: false,
+  selectedPlantId: null,
+  modal: null,
+  voice: { text:"", listening:false, parsed:null, queryText:"", queryResult:null },
+};
+
+/* =========================================================================
+   本機自動保存：重整／關閉網頁後保留植物、照片、族譜與其他操作資料
+   使用 localStorage，不改變原有操作流程。
+========================================================================= */
+const PLANT_MANAGER_STORAGE_KEY = "plant_manager_state_v1";
+function saveState(){
+  try{
+    const snapshot = JSON.parse(JSON.stringify(state));
+    // UI 暫態狀態不需要保存，避免重新開啟時直接進入某株詳情或彈窗。
+    snapshot.selectedPlantId = null;
+    snapshot.modal = null;
+    snapshot.voice = { text:"", listening:false, parsed:null, queryText:"", queryResult:null };
+    localStorage.setItem(PLANT_MANAGER_STORAGE_KEY, JSON.stringify(snapshot));
+  }catch(err){
+    console.warn("植物資料保存失敗", err);
+  }
+}
+function loadState(){
+  try{
+    const raw = localStorage.getItem(PLANT_MANAGER_STORAGE_KEY);
+    if(!raw) return false;
+    const saved = JSON.parse(raw);
+    if(!saved || !Array.isArray(saved.plants)) return false;
+    state = Object.assign(state, saved);
+    state.plants = Array.isArray(state.plants) ? state.plants : [];
+    state.plants.forEach(p=>{
+      p.photos = Array.isArray(p.photos) ? p.photos : [];
+      p.moveHistory = Array.isArray(p.moveHistory) ? p.moveHistory : [];
+    });
+    return true;
+  }catch(err){
+    console.warn("植物資料讀取失敗，使用原始資料", err);
+    return false;
+  }
+}
+loadState();
+window.addEventListener("beforeunload", saveState);
+
+let pieChartInstance = null;
+
+/* =========================================================================
+   共用計算
+========================================================================= */
+function alivePlants(){ return state.plants.filter(p=>p.status==="存活"); }
+function deadPlants(){ return state.plants.filter(p=>p.status==="已死亡"); }
+function survivalRate(){
+  return state.plants.length ? Math.round(alivePlants().length/state.plants.length*100) : 0;
+}
+function binCNRatio(bin){
+  if(!bin.inputs.length) return null;
+  const totalWeight = bin.inputs.reduce((s,i)=>s+i.weight,0);
+  const weighted = bin.inputs.reduce((s,i)=>s+i.weight*i.ratio,0);
+  return Math.round(weighted/totalWeight);
+}
+function marketStats(){
+  return state.markets.map(m=>{
+    const purchased = state.plants.filter(p=>p.source===m.id);
+    const alive = purchased.filter(p=>p.status==="存活");
+    return {...m, total:purchased.length, alive:alive.length,
+      rate: purchased.length ? Math.round(alive.length/purchased.length*100) : 0};
+  });
+}
+// 這裡新增族譜邏輯：以 parentId（無性）優先，其次 motherId（有性/交配種）決定血緣主線
+function primaryParentId(p){ return p.parentId || p.motherId || null; }
+// 家族族譜只管理鹿角蕨；非鹿角蕨維持一般植物資料，不加入族譜。
+// 鹿角蕨即使沒有設定母株／父株，也會自動以「第 1 代母株」進入族譜。
+function isGenealogyPlant(p){ return !!p && p.isStaghorn === true; }
+function familyRoots(){ return state.plants.filter(p=>isGenealogyPlant(p) && !primaryParentId(p)); }
+function familyChildren(id){ return state.plants.filter(p=>isGenealogyPlant(p) && primaryParentId(p)===id); }
+
+function plantCurrentPotSize(p){
+  // 以這一株自己的最新盆器歷程為準，避免目前盆器與歷程最後一筆對不起來。
+  const history = Array.isArray(p.moveHistory) ? p.moveHistory : [];
+  const latest = history.length ? history[history.length - 1] : null;
+  return latest && latest.potSize != null ? latest.potSize : p.potSize;
+}
+function plantPotDisplay(p){
+  // 每一筆植物資料只顯示自己的目前盆器；子代是獨立植物資料，
+  // 不把子代盆器合併到母株，避免「盆器大小」與「盆器與場地歷程」對不起來。
+  const size = plantCurrentPotSize(p);
+  return size ? `${size} 吋盆` : "尚未設定";
+}
+// 這裡新增族譜邏輯：植株的狀態燈號（綠/灰/紅）與文字說明
+function plantStatusMeta(p){
+  if(p.status==="存活"){
+    return { dot:"bg-emerald-500", ring:"ring-emerald-100", label:`存活 · ${plantCurrentPotSize(p)}吋盆`, textCls:"text-emerald-700" };
+  } else if(p.status==="已出售"){
+    return { dot:"bg-stone-400", ring:"ring-stone-100", label:`已出售給 ${esc(p.soldTo||"未填寫")}`, textCls:"text-stone-500" };
+  }
+  return { dot:"bg-red-500", ring:"ring-red-100", label:`死因：${esc(p.deathCause||"未填寫")}`, textCls:"text-red-600 font-bold" };
+}
+
+/* =========================================================================
+   Toast / XP / 徽章
+========================================================================= */
+function showToast(msg, icon){
+  const root = document.getElementById("toast-root");
+  root.innerHTML = `
+    <div class="fixed bottom-6 right-6 z-[60] bg-white shadow-2xl border border-emerald-200 rounded-2xl px-5 py-3 flex items-center gap-3 fade-in">
+      <i class="fa-solid ${icon||'fa-circle-check'} text-emerald-600"></i>
+      <span class="text-sm font-medium text-stone-700">${esc(msg)}</span>
+    </div>`;
+  clearTimeout(window.__toastTimer);
+  window.__toastTimer = setTimeout(()=>{ root.innerHTML=""; }, 3200);
+}
+function gainXp(amount){ state.xp += amount; renderSidebarMeta(); }
+function unlockBadge(id){
+  if(state.unlockedBadges.includes(id)) return;
+  const b = BADGES.find(x=>x.id===id);
+  state.unlockedBadges.push(id);
+  showToast(`解鎖新徽章：${b.name}`, "fa-champagne-glasses");
+  gainXp(30);
+}
+
+/* =========================================================================
+   植物操作
+========================================================================= */
+function addPlant(data){
+  // 這裡新增族譜邏輯：新增植物時可選擇 parentId（分株／側芽，無性）或
+  // motherId + fatherId（交配種，有性）。若都沒有指定，視為外購/獨立植株（第 1 代）。
+  const id = nextPlantId();
+  const parentId = data.parentId || null;
+  const motherId = data.motherId || null;
+  const fatherId = data.fatherId || null;
+  const linkedParent = parentId ? state.plants.find(p=>p.id===parentId)
+                     : motherId ? state.plants.find(p=>p.id===motherId)
+                     : null;
+  const generation = linkedParent ? (linkedParent.generation||1)+1 : 1;
+  // 鹿角蕨新增時即自動成為族譜中的根節點；若指定母株／父株，則自動接到對應血統。
+  const normalizedGeneration = data.isStaghorn ? generation : 1;
+  const newPlant = {
+    id, name:data.name, species:data.species||data.name, isStaghorn:!!data.isStaghorn,
+    source:data.source, price:Number(data.price)||0, acquireDate:data.acquireDate,
+    status:"存活", location:data.location, potSize:Number(data.potSize)||4,
+    parentId, motherId, fatherId, generation:normalizedGeneration,
+    propagationMethod: data.propagationMethod || (parentId||motherId ? "分株" : "花市購入"),
+    photos: data.photos || [],
+    moveHistory:[{location:data.location, potSize:Number(data.potSize)||4, date:data.acquireDate}]
+  };
+  state.plants.push(newPlant);
+
+  // 「新手園丁」代表使用者第一次透過系統新增植物。
+  // 不再用 state.plants.length===0 判斷，避免 seedPlants() 的示範資料讓成就永遠無法解鎖。
+  if(!state.hasAddedFirstPlant){
+    state.hasAddedFirstPlant = true;
+    unlockBadge("b1");
+  }
+
+  if(state.plants.length>=10) unlockBadge("b5");
+  if(motherId || fatherId) unlockBadge("b4");
+  gainXp(10);
+  showToast(`已新增植物 ${id}`, "fa-seedling");
+  closeModal();
+  render();
+}
+
+// 這裡新增族譜邏輯：標記「轉讓／出售給鄰居朋友」的狀態流程（灰燈）
+function markSoldStart(plantId){
+  openModal("sold", { plantId });
+}
+function markSoldConfirm(plantId, soldDate, soldTo){
+  const plant = state.plants.find(p=>p.id===plantId);
+  plant.status = "已出售";
+  plant.soldDate = soldDate;
+  plant.soldTo = soldTo || "未填寫";
+  gainXp(6);
+  showToast(`已標記轉讓／出售給 ${plant.soldTo}`, "fa-people-arrows");
+  closeModal();
+  render();
+}
+
+function markDeadStart(plantId){
+  openModal("death", { plantId });
+}
+function markDeadConfirm(plantId, deathDate, deathCause){
+  openModal("weatherLoading", {});
+  setTimeout(()=>{
+    const plant = state.plants.find(p=>p.id===plantId);
+    const weather = state.apiOffline ? null : {
+      temp: (Math.random()*15+20).toFixed(1),
+      humidity: Math.round(Math.random()*40+40)
+    };
+    plant.status = "已死亡";
+    plant.deathDate = deathDate;
+    plant.deathCause = deathCause || "未填寫死因"; // 這裡新增族譜邏輯：死因將顯示在族譜紅燈節點上
+    plant.deathWeather = weather;
+    closeModal();
+    showToast(state.apiOffline ? "已標記死亡（氣象 API 離線，未帶入數據）" : "已標記死亡並帶入氣象數據", "fa-skull");
+    render();
+  }, 1200);
+}
+
+function movePlantSubmit(plantId, location, potSize, date, reason, splitCount){
+  const plant = state.plants.find(p=>p.id===plantId);
+  plant.location = location;
+  plant.potSize = Number(potSize);
+  plant.moveHistory.push({location, potSize:Number(potSize), date});
+  if(reason==="分株" && splitCount>0){
+    for(let i=0;i<splitCount;i++){
+      const newId = nextPlantId();
+      state.plants.push({
+        id:newId, name:`${plant.name}-子代${i+1}`, species:plant.species, isStaghorn:plant.isStaghorn,
+        source:plant.source, price:0, acquireDate:date, status:"存活", location, potSize:Number(potSize),
+        parentId:plant.id, generation:(plant.generation||1)+1, propagationMethod:"分株", photos:[],
+        moveHistory:[{location, potSize:Number(potSize), date}]
+      });
+    }
+    unlockBadge("b4");
+  }
+  gainXp(8);
+  showToast(reason==="分株" ? `已完成分株，新增 ${splitCount} 株子代` : "已更新換盆紀錄", "fa-box");
+  closeModal();
+  render();
+}
+
+function addMarket(name){
+  if(!name) return;
+  state.markets.push({id:uid("mk"), name});
+  render();
+}
+function addMarketPurchase(data){
+  if(!data.name) return;
+  addPlant({
+    name: data.name,
+    species: data.species || data.name,
+    isStaghorn: data.isStaghorn,
+    source: data.source,
+    price: data.price,
+    acquireDate: data.acquireDate || todayStr(),
+    location: data.location,
+    potSize: data.potSize,
+    propagationMethod: "花市購入"
+  });
+  showToast(`已記錄從花市買入：${data.name}`, "fa-bag-shopping");
+}
+
+/* =========================================================================
+   資材 / 堆肥
+========================================================================= */
+function purchaseMaterialSubmit(name, qty, unit, cost, force){
+  const existing = state.materials.find(m=>m.name.trim()===name.trim());
+  if(existing && !force){
+    openModal("duplicateWarning", { name, qty, unit, cost, existingId: existing.id });
+    return;
+  }
+  if(existing){
+    existing.stock += Number(qty);
+    if(cost!==undefined && cost!=="") existing.unitCost = Number(cost);
+  } else {
+    state.materials.push({id:uid("mt"), name, stock:Number(qty), unit, unitCost:Number(cost)||0});
+  }
+  closeModal();
+  showToast("已新增採購紀錄", "fa-box");
+  render();
+}
+function addCompostBin(name, type, targetWeight){
+  if(!name) return;
+  state.compostBins.push({id:uid("cb"), name, type: type||"高溫", inputs:[], targetWeight:Number(targetWeight)||0});
+  closeModal();
+  showToast(`已新增堆肥箱：${name}`, "fa-recycle");
+  render();
+}
+function useMaterial(id){
+  const m = state.materials.find(x=>x.id===id);
+  m.stock = Math.max(0, m.stock-1);
+  render();
+}
+function addCompostInput(binId, materialName, weight){
+  const bin = state.compostBins.find(b=>b.id===binId);
+  const preset = state.cnPresets.find(c=>c.name===materialName);
+  const ratio = preset ? preset.ratio : 30;
+  const wasEmpty = bin.inputs.length===0;
+  bin.inputs.push({material:materialName, weight:Number(weight), ratio, date: todayStr()});
+  if(wasEmpty) unlockBadge("b2");
+  gainXp(5);
+  showToast("已記錄堆肥投入", "fa-recycle");
+  render();
+}
+function addCnPreset(name, ratio){
+  if(!name||!ratio) return;
+  state.cnPresets.push({id:uid("m"), name, ratio:Number(ratio)});
+  render();
+}
+function updateCnPreset(id, field, value){
+  const c = state.cnPresets.find(x=>x.id===id);
+  c[field] = field==="ratio" ? Number(value) : value;
+}
+function removeCnPreset(id){
+  state.cnPresets = state.cnPresets.filter(c=>c.id!==id);
+  render();
+}
+
+/* =========================================================================
+   銷售 / 收成
+========================================================================= */
+function addSaleSubmit(target, salePrice, cost, buyer){
+  const wasEmpty = state.sales.length===0;
+  state.sales.push({id:uid("sl"), target, salePrice:Number(salePrice), cost:Number(cost),
+    buyer, date:todayStr(), voided:false});
+  if(wasEmpty) unlockBadge("b3");
+  gainXp(12);
+  showToast("已記錄銷售並計算淨利潤", "fa-dollar-sign");
+  closeModal();
+  render();
+}
+function voidSale(id){
+  const s = state.sales.find(x=>x.id===id);
+  s.voided = true;
+  render();
+}
+function addHarvest(cropId, amount){
+  const c = state.crops.find(x=>x.id===cropId);
+  c.harvests.push({date:todayStr(), amount:Number(amount)});
+  showToast("已累加採收量", "fa-leaf");
+  render();
+}
+function addCrop(name, initialCost){
+  if(!name) return;
+  state.crops.push({id:uid("cr"), name, initialCost:Number(initialCost)||0, harvests:[]});
+  closeModal();
+  showToast(`已新增作物：${name}`, "fa-leaf");
+  render();
+}
+
+/* =========================================================================
+   AI 語音
+========================================================================= */
+function parseVoiceCommand(text){
+  const amountMatch = text.match(/(\d+)\s*元/);
+  const amount = amountMatch ? Number(amountMatch[1]) : null;
+  let action = "未知";
+  if(/買|購入/.test(text)) action = "購入";
+  else if(/賣|售出/.test(text)) action = "售出";
+  else if(/澆水/.test(text)) action = "澆水";
+
+  const knownNames = [...new Set(state.plants.map(p=>p.species))];
+  const matchedSpecies = knownNames.find(n=>text.includes(n));
+
+  if(matchedSpecies){
+    const candidates = state.plants.filter(p=>p.species===matchedSpecies && p.status==="存活");
+    const hints = { "窗台":"窗邊", "門口":"門口", "角落":"角落" };
+    const hintKey = Object.keys(hints).find(h=>text.includes(h));
+    if(candidates.length>1 && !hintKey){
+      return { ambiguous:true, species:matchedSpecies, candidates, action, amount, rawText:text };
+    }
+    const target = hintKey ? (candidates.find(c=>c.location.includes(hints[hintKey])) || candidates[0]) : candidates[0];
+    return { ambiguous:false, species:matchedSpecies, target, action, amount, rawText:text };
+  }
+  return { ambiguous:false, species:null, target:null, action, amount, rawText:text };
+}
+function confirmVoiceEntry(){
+  const parsed = state.voice.parsed;
+  if(parsed.action==="購入" && parsed.amount){
+    addPlant({ name:parsed.species||"語音建檔植物", species:parsed.species,
+      source: state.markets[0]?.id, price:parsed.amount, acquireDate: todayStr(),
+      location: LOCATIONS[0], potSize:4 });
+  }
+  unlockBadge("b6");
+  gainXp(15);
+  showToast("語音資料已確認寫入資料庫", "fa-check");
+  state.voice = { text:"", listening:false, parsed:null, queryText: state.voice.queryText, queryResult: state.voice.queryResult };
+  render();
+}
+
+/* =========================================================================
+   匯出
+========================================================================= */
+function exportCSV(){
+  const rows = [["類型","項目","金額","日期"]];
+  state.plants.forEach(p=>rows.push(["購入", p.name, p.price, p.acquireDate]));
+  state.sales.filter(s=>!s.voided).forEach(s=>rows.push(["銷售", s.target, s.salePrice-s.cost, s.date]));
+  const csv = rows.map(r=>r.join(",")).join("\n");
+  const blob = new Blob(["\uFEFF"+csv], {type:"text/csv;charset=utf-8;"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = "溫室報表.csv"; a.click();
+  URL.revokeObjectURL(url);
+  showToast("CSV 已匯出下載", "fa-download");
+}
+function expenseBreakdown(){
+  const plantCost = state.plants.reduce((s,p)=>s+(p.price||0),0);
+  const materialCost = state.materials.length*50;
+  const compostVal = state.compostBins.reduce((s,b)=>s+b.inputs.length*10,0);
+  return [
+    { name:"植物購入", value: plantCost || 1 },
+    { name:"資材耗材", value: materialCost },
+    { name:"堆肥投入", value: compostVal || 1 }
+  ];
+}
+
+/* =========================================================================
+   Modal 系統
+========================================================================= */
+function openModal(type, payload){
+  if(type==="addPlant") pendingAddPlantPhoto = null;
+  state.modal = { type, payload };
+  renderModal();
+}
+function closeModal(){ state.modal = null; renderModal(); }
+
+function renderModal(){
+  const root = document.getElementById("modal-root");
+  const m = state.modal;
+  if(!m){ root.innerHTML = ""; return; }
+
+  const shellStart = (title, wide) => `
+    <div class="fixed inset-0 z-50 bg-stone-900/40 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4">
+      <div class="bg-white/95 backdrop-blur-md border border-white/40 shadow-2xl rounded-2xl sm:rounded-3xl p-4 sm:p-6 ${wide?'max-w-2xl':'max-w-md'} w-full max-h-[90vh] overflow-y-auto fade-in">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="font-serif-cjk text-base sm:text-lg font-bold text-stone-800">${esc(title)}</h3>
+          <button data-action="close-modal" class="p-1.5 rounded-full hover:bg-stone-100 transition-all duration-300 hover:scale-110 shrink-0">
+            <i class="fa-solid fa-xmark text-stone-500"></i>
+          </button>
+        </div>`;
+  const shellEnd = `</div></div>`;
+
+  const field = (label, inner) => `<label class="block"><span class="text-xs font-medium text-stone-500 mb-1 block">${esc(label)}</span>${inner}</label>`;
+  const inputCls = "w-full px-3 py-2 rounded-xl border border-stone-200 bg-white/70 text-sm text-stone-700 focus:outline-none focus:ring-2 focus:ring-emerald-400 transition-all duration-300";
+  const btn = (label, action, tone, extraAttrs) => {
+    const tones = {
+      emerald:"bg-gradient-to-r from-emerald-500 to-emerald-700 text-white",
+      amber:"bg-gradient-to-r from-amber-400 to-amber-600 text-white",
+      orange:"bg-gradient-to-r from-orange-500 to-orange-700 text-white",
+      ghost:"bg-white text-stone-600 border border-stone-200"
+    };
+    return `<button data-action="${action}" ${extraAttrs||''} class="${tones[tone||'emerald']} px-4 py-2 text-sm rounded-xl font-medium shadow-md transition-all duration-300 hover:scale-105 active:scale-95 flex items-center gap-1.5 justify-center">${label}</button>`;
+  };
+
+  let html = "";
+
+  if(m.type === "addPlant"){
+    // 這裡新增族譜邏輯：新增植物時可指定繁殖方式與血緣連結（parentId / motherId+fatherId）
+    const plantOptions = `<option value="">（無）</option>` + state.plants.map(p=>`<option value="${p.id}">${p.id} · ${esc(p.name)}</option>`).join('');
+    html = shellStart("新增植物", true) + `
+      <div class="grid sm:grid-cols-2 gap-4">
+        ${field("植物名稱", `<input id="ap-name" class="${inputCls}" placeholder="例如：龜背芋 - 大葉" />`)}
+        ${field("是否為鹿角蕨", `<select id="ap-staghorn" class="${inputCls}" onchange="toggleStaghornField()"><option value="n">否</option><option value="y">是</option></select>`)}
+        <div id="ap-species-wrap">${field("品種", `<input id="ap-species" class="${inputCls}" placeholder="例如：龜背芋" />`)}</div>
+        ${field("取得來源（花市 / 賣家）", `<select id="ap-source" class="${inputCls}">${state.markets.map(mk=>`<option value="${mk.id}">${esc(mk.name)}</option>`).join('')}</select>`)}
+        ${field("價格", `<input id="ap-price" type="number" class="${inputCls}" />`)}
+        ${field("取得日期", `<input id="ap-date" type="date" class="${inputCls}" value="${todayStr()}" />`)}
+        ${field("場地", `<select id="ap-location" class="${inputCls}">${LOCATIONS.map(l=>`<option value="${l}">${l}</option>`).join('')}</select>`)}
+        ${field("盆器吋數", `<input id="ap-pot" type="number" class="${inputCls}" value="4" />`)}
+        <div class="sm:col-span-2">
+          <span class="text-xs font-medium text-stone-500 mb-1 block">植物照片</span>
+          <div class="flex flex-col sm:flex-row gap-3 items-start">
+            <label class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-100 text-sm font-medium cursor-pointer hover:bg-emerald-100 transition-all">
+              <i class="fa-solid fa-camera"></i> 拍照／選擇圖片
+              <input id="ap-photo" type="file" accept="image/*" capture="environment" class="hidden" onchange="previewAddPlantPhoto(event)" />
+            </label>
+            <div id="ap-photo-preview" class="w-28 h-20 rounded-xl border border-dashed border-stone-200 bg-stone-50 grid place-items-center overflow-hidden">
+              <span class="text-xs text-stone-400">尚未選擇圖片</span>
+            </div>
+          </div>
+          <p class="text-[10px] text-stone-400 mt-1">新增後會直接顯示在「植物總表」，也會成為這株植物的第一張照片。</p>
+        </div>
+        ${field("繁殖方式", `<select id="ap-propagation" class="${inputCls}" onchange="toggleLineageFields()">
+            <option value="花市購入">外購（無血緣關係）</option>
+            <option value="分株">自家繁殖 - 分株</option>
+            <option value="側芽">自家繁殖 - 側芽</option>
+            <option value="交配種">自家繁殖 - 交配種（有性繁殖）</option>
+          </select>`)}
+      </div>
+      <div id="ap-lineage-wrap" class="hidden grid sm:grid-cols-2 gap-4 mt-1"></div>
+      <div class="flex justify-end gap-2 mt-5">
+        ${btn("取消","close-modal","ghost")}
+        ${btn('<i class="fa-solid fa-check"></i> 新增植物',"submit-add-plant","emerald")}
+      </div>` + shellEnd;
+  }
+
+  else if(m.type === "move"){
+    const plant = state.plants.find(p=>p.id===m.payload.plantId);
+    html = shellStart(`換盆 / 移動：${plant.name}`) + `
+      <div class="space-y-4">
+        ${field("換盆原因", `<select id="mv-reason" class="${inputCls}" onchange="toggleSplitField()">
+            <option value="正常換盆">正常換盆</option><option value="分株">分株</option><option value="修根">修根</option>
+          </select>`)}
+        ${field("新場地", `<select id="mv-location" class="${inputCls}">${LOCATIONS.map(l=>`<option value="${l}" ${l===plant.location?'selected':''}>${l}</option>`).join('')}</select>`)}
+        ${field("新盆器吋數", `<input id="mv-pot" type="number" class="${inputCls}" value="${plant.potSize}" />`)}
+        ${field("日期", `<input id="mv-date" type="date" class="${inputCls}" value="${todayStr()}" />`)}
+        <div id="mv-split-wrap" class="hidden">${field("分株數量（將自動建立子代植物檔案）", `<input id="mv-split" type="number" min="1" class="${inputCls}" value="1" />`)}</div>
+        <div class="flex justify-end gap-2 pt-2">
+          ${btn("取消","close-modal","ghost")}
+          ${btn('<i class="fa-solid fa-check"></i> 確認送出',"submit-move","emerald",`data-plant-id="${plant.id}"`)}
+        </div>
+      </div>` + shellEnd;
+  }
+
+  else if(m.type === "death"){
+    const plant = state.plants.find(p=>p.id===m.payload.plantId);
+    html = shellStart(`標記死亡：${plant.name}`) + `
+      <div class="space-y-4">
+        ${field("死亡日期", `<input id="dd-date" type="date" class="${inputCls}" value="${todayStr()}" />`)}
+        ${field("死因（將顯示於族譜紅燈節點）", `<input id="dd-cause" class="${inputCls}" placeholder="例如：悶熱爛根 / 蟲害 / 凍傷" />`)}
+        <p class="text-xs text-stone-400">系統將自動串接氣象 API，帶入 ${esc(plant.location)} 當日溫濕度數據。</p>
+        <div class="flex justify-end gap-2 pt-2">
+          ${btn("取消","close-modal","ghost")}
+          ${btn('<i class="fa-solid fa-skull"></i> 確認標記死亡',"submit-death","orange",`data-plant-id="${plant.id}"`)}
+        </div>
+      </div>` + shellEnd;
+  }
+
+  else if(m.type === "sold"){
+    // 這裡新增族譜邏輯：轉讓／出售給鄰居朋友的 modal（對應族譜灰燈狀態）
+    const plant = state.plants.find(p=>p.id===m.payload.plantId);
+    html = shellStart(`轉讓／出售：${plant.name}`) + `
+      <div class="space-y-4">
+        ${field("日期", `<input id="sd-date" type="date" class="${inputCls}" value="${todayStr()}" />`)}
+        ${field("對象（鄰居／朋友／買家）", `<input id="sd-to" class="${inputCls}" placeholder="例如：隔壁陳太太" />`)}
+        <div class="flex justify-end gap-2 pt-2">
+          ${btn("取消","close-modal","ghost")}
+          ${btn('<i class="fa-solid fa-people-arrows"></i> 確認轉讓／出售',"submit-sold","amber",`data-plant-id="${plant.id}"`)}
+        </div>
+      </div>` + shellEnd;
+  }
+
+  else if(m.type === "weatherLoading"){
+    html = `<div class="fixed inset-0 z-50 bg-stone-900/40 backdrop-blur-sm flex items-center justify-center p-4">
+      <div class="bg-white/95 rounded-2xl sm:rounded-3xl p-6 sm:p-8 flex flex-col items-center gap-3 fade-in">
+        <i class="fa-solid fa-spinner fa-spin text-2xl text-emerald-500"></i>
+        <p class="text-sm text-stone-500">查詢氣象資料中...</p>
+      </div></div>`;
+  }
+
+  else if(m.type === "duplicateWarning"){
+    const existing = state.materials.find(x=>x.id===m.payload.existingId);
+    html = shellStart("發現重複物料") + `
+      <div class="text-sm text-stone-600 space-y-3">
+        <div class="flex items-center gap-2 text-orange-600 bg-orange-50 rounded-xl px-3 py-2">
+          <i class="fa-solid fa-triangle-exclamation"></i>
+          庫存已有相同物料「${esc(m.payload.name)}」，目前庫存 ${existing.stock} ${esc(existing.unit)}。是否仍要新增？
+        </div>
+        <div class="flex gap-2 justify-end">
+          ${btn("取消","close-modal","ghost")}
+          ${btn("仍要新增","submit-force-material","orange",`data-name="${esc(m.payload.name)}" data-qty="${m.payload.qty}" data-unit="${esc(m.payload.unit)}" data-cost="${m.payload.cost||0}"`)}
+        </div>
+      </div>` + shellEnd;
+  }
+
+  else if(m.type === "addMaterial"){
+    html = shellStart("新增資材採購") + `
+      <div class="space-y-4">
+        ${field("物料名稱", `<input id="mat-name" class="${inputCls}" />`)}
+        ${field("數量", `<input id="mat-qty" type="number" class="${inputCls}" value="1" />`)}
+        ${field("單位", `<input id="mat-unit" class="${inputCls}" value="包" />`)}
+        ${field("單價（每單位成本）", `<input id="mat-cost" type="number" class="${inputCls}" value="0" />`)}
+        <div class="flex justify-end gap-2 pt-2">
+          ${btn("取消","close-modal","ghost")}
+          ${btn('<i class="fa-solid fa-check"></i> 新增',"submit-material","emerald")}
+        </div>
+      </div>` + shellEnd;
+  }
+
+  else if(m.type === "addSale"){
+    html = shellStart("新增銷售紀錄") + `
+      <div class="space-y-4">
+        ${field("售出項目", `<select id="sl-target" class="${inputCls}">${state.plants.map(p=>`<option value="${esc(p.name)}">${esc(p.name)}</option>`).join('')}</select>`)}
+        ${field("售價", `<input id="sl-price" type="number" class="${inputCls}" />`)}
+        ${field("成本", `<input id="sl-cost" type="number" class="${inputCls}" />`)}
+        ${field("買家", `<input id="sl-buyer" class="${inputCls}" />`)}
+        <div class="flex justify-end gap-2 pt-2">
+          ${btn("取消","close-modal","ghost")}
+          ${btn('<i class="fa-solid fa-check"></i> 確認送出',"submit-sale","emerald")}
+        </div>
+      </div>` + shellEnd;
+  }
+
+  else if(m.type === "addCrop"){
+    html = shellStart("新增可食用作物") + `
+      <div class="space-y-4">
+        ${field("作物名稱", `<input id="crop-name" class="${inputCls}" placeholder="例如：小黃瓜" />`)}
+        ${field("初始成本（種子/種苗/資材等）", `<input id="crop-cost" type="number" class="${inputCls}" value="0" />`)}
+        <div class="flex justify-end gap-2 pt-2">
+          ${btn("取消","close-modal","ghost")}
+          ${btn('<i class="fa-solid fa-check"></i> 新增作物',"submit-crop","emerald")}
+        </div>
+      </div>` + shellEnd;
+  }
+
+  else if(m.type === "addCompostBin"){
+    html = shellStart("新增堆肥箱") + `
+      <div class="space-y-4">
+        ${field("堆肥箱名稱", `<input id="cb-name" class="${inputCls}" placeholder="例如：高溫堆肥箱 C" />`)}
+        ${field("類型", `<select id="cb-type" class="${inputCls}"><option value="高溫">高溫</option><option value="低溫">低溫</option></select>`)}
+        ${field("目標肥料總重量（g）", `<input id="cb-target" type="number" class="${inputCls}" value="5000" />`)}
+        <div class="flex justify-end gap-2 pt-2">
+          ${btn("取消","close-modal","ghost")}
+          ${btn('<i class="fa-solid fa-check"></i> 新增堆肥箱',"submit-compost-bin","emerald")}
+        </div>
+      </div>` + shellEnd;
+  }
+
+  else if(m.type === "familyDetail"){
+    // 這裡新增族譜邏輯：點擊關係圖上的色點標籤或近期紀錄，開啟這個「最新生長詳情」風格的面板
+    const plant = state.plants.find(p=>p.id===m.payload.plantId);
+    if(!isGenealogyPlant(plant)){ closeModal(); renderGenealogy(); return; }
+    const category = plantFamilyCategory(plant);
+    const thumb = plantThumbUrl(plant);
+    const parent = primaryParentId(plant) ? state.plants.find(p=>p.id===primaryParentId(plant)) : null;
+    const catColor = category ? FAMILY_COLOR_CLASSES[FAMILY_CATEGORY_META[category].color] : null;
+    html = shellStart("家族紀錄詳情", true) + `
+      <div class="relative w-full h-48 sm:h-64 rounded-2xl overflow-hidden bg-emerald-50 mb-4">
+        ${thumb ? `<img src="${thumb}" class="w-full h-full object-cover" alt="${esc(plant.name)}" />`
+                : `<div class="w-full h-full flex items-center justify-center bg-gradient-to-br from-emerald-100 to-emerald-300"><i class="fa-solid fa-seedling text-emerald-500 text-3xl"></i></div>`}
+        ${category ? `<span class="absolute top-3 right-3 text-xs px-3 py-1.5 rounded-full font-medium text-white shadow ${catColor.pill}">${esc(category)}</span>` : ""}
+      </div>
+      <div class="flex items-center justify-between flex-wrap gap-2 mb-4">
+        <div>
+          <p class="font-serif-cjk text-base font-bold text-stone-800">${esc(plant.name)}</p>
+          <p class="text-xs text-stone-400">${plant.id} · ${esc(plant.species)}${parent?` · 母株：${esc(parent.name)}`:""}</p>
+        </div>
+        <span class="text-xs px-2.5 py-1 rounded-full font-medium ${statusPillClasses(plant.status)}">${plant.status}</span>
+      </div>
+      <p class="text-xs font-medium text-stone-500 mb-2 flex items-center gap-1.5"><i class="fa-solid fa-circle-question text-emerald-500"></i> 這是什麼關係？</p>
+      <div class="space-y-2 mb-4">
+        ${Object.keys(FAMILY_CATEGORY_META).map(catKey=>{
+          const cm = FAMILY_CATEGORY_META[catKey];
+          const cc = FAMILY_COLOR_CLASSES[cm.color];
+          const isMatch = catKey===category;
+          return `<div class="flex items-start gap-3 rounded-2xl px-3 py-2.5 ${isMatch ? cc.soft.split(' ')[0] : 'bg-stone-50'}">            <span class="w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${isMatch ? cc.pill+' text-white' : 'bg-stone-200 text-stone-500'}"><i class="fa-solid ${cm.icon} text-sm"></i></span>
+            <div class="min-w-0 flex-1">
+              <div class="flex items-center gap-2 flex-wrap">
+                <p class="text-sm font-medium ${isMatch?'text-stone-800':'text-stone-500'}">${esc(catKey)}</p>
+                ${isMatch ? `<span class="text-[10px] px-2 py-0.5 rounded-full font-medium ${statusPillClasses(plant.status)}">${plant.status}</span>` : `<span class="text-[10px] px-2 py-0.5 rounded-full bg-stone-100 text-stone-400">參考說明</span>`}
+              </div>
+              <p class="text-[11px] ${isMatch?'text-stone-600':'text-stone-400'} mt-0.5">${cm.desc}</p>
+            </div>
+          </div>`;
+        }).join("")}
+      </div>
+      <div class="bg-emerald-50 border border-emerald-100 rounded-2xl px-4 py-3 flex items-start gap-2">
+        <i class="fa-solid fa-hand-holding-heart text-emerald-500 mt-0.5"></i>
+        <div>
+          <p class="text-xs font-medium text-emerald-800 mb-0.5">照顧建議</p>
+          <p class="text-xs text-emerald-700 leading-relaxed">${familyCareTip(plant)}</p>
+        </div>
+      </div>
+      <div class="flex justify-end gap-2 mt-4">
+        ${btn("關閉","close-modal","ghost")}
+        ${btn('<i class="fa-solid fa-seedling"></i> 查看完整植物詳情',"goto-plant-detail","emerald",`data-plant-id="${plant.id}"`)}
+      </div>` + shellEnd;
+  }
+
+  root.innerHTML = html;
+}
+
+/* =========================================================================
+   側邊欄
+========================================================================= */
+function renderSidebar(){
+  const navList = document.getElementById("nav-list");
+  navList.innerHTML = NAV.map(n => `
+    <button data-action="switch-tab" data-tab="${n.id}"
+      class="w-full flex items-center gap-3 px-4 py-2.5 rounded-2xl transition-all duration-300 hover:scale-[1.03] active:scale-95 text-sm font-medium text-left ${
+        state.tab===n.id ? "bg-gradient-to-r from-amber-400 to-emerald-500 text-white shadow-lg" : "text-emerald-50/80 hover:bg-emerald-800/60"}">
+      <span class="w-5 text-center shrink-0" aria-hidden="true">${n.icon}</span>
+      <span class="truncate">${n.label}</span>
+    </button>`).join("");
+  renderSidebarMeta();
+
+  const banner = document.getElementById("offline-banner");
+  banner.className = state.apiOffline
+    ? "mb-4 bg-orange-100 border border-orange-300 text-orange-800 text-sm rounded-2xl px-4 py-3 flex items-center gap-2"
+    : "hidden";
+
+  const apiBtn = document.getElementById("api-toggle");
+  const apiLabel = document.getElementById("api-toggle-label");
+  const apiIcon = document.getElementById("api-toggle-icon");
+  if(state.apiOffline){
+    apiBtn.className = "w-full flex items-center gap-2 px-3 py-2 rounded-xl text-xs transition-all duration-300 hover:scale-105 active:scale-95 bg-orange-800/70 text-orange-100";
+    apiIcon.textContent = "🔌";
+    apiLabel.textContent = "模擬外部 API 斷線中";
+  } else {
+    apiBtn.className = "w-full flex items-center gap-2 px-3 py-2 rounded-xl text-xs transition-all duration-300 hover:scale-105 active:scale-95 bg-emerald-900/60 text-emerald-100";
+    apiIcon.textContent = "📶";
+    apiLabel.textContent = "外部 API 連線正常";
+  }
+}
+function renderSidebarMeta(){
+  const level = Math.floor(state.xp/100)+1;
+  const xpInLevel = state.xp%100;
+  document.getElementById("level-label").textContent = `Lv.${level} 園丁`;
+  document.getElementById("xp-label").textContent = `${xpInLevel}/100`;
+  document.getElementById("xp-bar").style.width = xpInLevel+"%";
+}
+
+/* =========================================================================
+   Dashboard
+========================================================================= */
+function renderDashboard(){
+  const netProfit = state.sales.filter(s=>!s.voided).reduce((s,x)=>s+(x.salePrice-x.cost),0);
+  const statCard = (icon, label, value, sub, tone) => {
+    const tones = { emerald:"from-emerald-500 to-emerald-700", amber:"from-amber-400 to-amber-600",
+      orange:"from-orange-500 to-orange-700", stone:"from-stone-400 to-stone-600" };
+    return `<div class="bg-white/80 backdrop-blur-md border border-white/40 shadow-xl rounded-2xl sm:rounded-3xl p-3 sm:p-5 flex items-center gap-3 sm:gap-4 transition-all duration-300 hover:scale-105 min-w-0">
+      <div class="w-9 h-9 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-gradient-to-br ${tones[tone]} flex items-center justify-center shadow-lg shrink-0">
+        <i class="fa-solid ${icon} text-white text-sm sm:text-base"></i>
+      </div>
+      <div class="min-w-0">
+        <p class="text-[11px] sm:text-xs text-stone-500 font-medium truncate">${label}</p>
+        <p class="text-lg sm:text-2xl font-serif-cjk font-bold text-stone-800 leading-tight truncate">${value}</p>
+        ${sub?`<p class="text-[10px] sm:text-[11px] text-stone-400 mt-0.5 truncate">${sub}</p>`:""}
+      </div></div>`;
+  };
+
+  const unlockedCount = state.unlockedBadges.length;
+  const totalBadges = BADGES.length;
+  const badgePct = totalBadges ? Math.round(unlockedCount / totalBadges * 100) : 0;
+  const nextBadge = BADGES.find(b => !state.unlockedBadges.includes(b.id));
+
+  const badgeWall = BADGES.map(b => {
+    const unlocked = state.unlockedBadges.includes(b.id);
+    return `<div title="${esc(b.desc)}" class="group rounded-2xl sm:rounded-3xl p-3 sm:p-5 text-center transition-all duration-300 hover:-translate-y-1 ${
+      unlocked ? "bg-gradient-to-br from-amber-200 via-amber-300 to-amber-500 shadow-lg" : "bg-stone-100/90 border border-stone-200 grayscale opacity-65"}">
+      <div class="mx-auto w-12 h-12 sm:w-16 sm:h-16 rounded-full flex items-center justify-center mb-2 sm:mb-3 ${
+        unlocked ? "bg-white/70 shadow-inner" : "bg-stone-200"}">
+        <i class="fa-solid ${b.icon} text-xl sm:text-2xl ${unlocked?"text-amber-700":"text-stone-400"}"></i>
+      </div>
+      <p class="text-xs sm:text-sm font-bold ${unlocked?"text-amber-900":"text-stone-500"}">${b.name}</p>
+      <p class="text-[10px] sm:text-[11px] leading-relaxed mt-1 ${unlocked?"text-amber-800":"text-stone-400"}">${b.desc}</p>
+      <div class="mt-2 inline-flex items-center gap-1 text-[10px] font-medium ${unlocked?"text-amber-800":"text-stone-400"}">
+        <i class="fa-solid ${unlocked?"fa-circle-check":"fa-lock"}"></i>${unlocked?"已解鎖":"尚未解鎖"}
+      </div>
+    </div>`;
+  }).join("");
+
+  const nextGoal = nextBadge ? `
+    <div class="bg-gradient-to-br from-emerald-50 to-lime-50 border border-emerald-100 rounded-2xl sm:rounded-3xl p-4 sm:p-5">
+      <div class="flex items-start gap-3">
+        <div class="w-11 h-11 rounded-2xl bg-white shadow-sm flex items-center justify-center shrink-0">
+          <i class="fa-solid ${nextBadge.icon} text-amber-500 text-lg"></i>
+        </div>
+        <div class="min-w-0 flex-1">
+          <div class="flex items-center justify-between gap-2">
+            <p class="text-xs text-emerald-700 font-medium">下一個成就</p>
+            <span class="text-[10px] text-stone-400">${unlockedCount}/${totalBadges}</span>
+          </div>
+          <p class="font-serif-cjk font-bold text-stone-800 mt-0.5">${nextBadge.name}</p>
+          <p class="text-[11px] text-stone-500 mt-1">${nextBadge.desc}</p>
+        </div>
+      </div>
+    </div>` : `
+    <div class="bg-gradient-to-br from-amber-50 to-yellow-50 border border-amber-200 rounded-2xl sm:rounded-3xl p-4 sm:p-5 flex items-center gap-3">
+      <div class="w-11 h-11 rounded-2xl bg-white shadow-sm flex items-center justify-center shrink-0"><i class="fa-solid fa-crown text-amber-500"></i></div>
+      <div><p class="font-serif-cjk font-bold text-amber-900">全部成就已解鎖！</p><p class="text-[11px] text-amber-700 mt-1">你已完成目前所有植物管理成就。</p></div>
+    </div>`;
+
+  document.getElementById("main-content").innerHTML = `
+    <div class="space-y-4 sm:space-y-6">
+      <div>
+        <h1 class="font-serif-cjk text-xl sm:text-2xl font-bold text-stone-800">溫室總覽</h1>
+        <p class="text-xs sm:text-sm text-stone-500 mt-1">你的植物管理紀錄與成就進度，一起累積每一次照顧植物的成果。</p>
+      </div>
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
+        ${statCard("fa-seedling","植物總數", state.plants.length, `存活 ${alivePlants().length} · 已死亡 ${deadPlants().length}`, "emerald")}
+        ${statCard("fa-arrow-trend-up","整體存活率", survivalRate()+"%", "持續照顧你的植物", "amber")}
+        ${statCard("fa-dollar-sign","累積淨利潤", "$"+netProfit, `共 ${state.sales.filter(s=>!s.voided).length} 筆銷售`, "orange")}
+        ${statCard("fa-award","已解鎖成就", unlockedCount+" / "+totalBadges, `完成度 ${badgePct}%`, "stone")}
+      </div>
+
+      <div class="bg-white/85 backdrop-blur-md border border-white/40 shadow-xl rounded-2xl sm:rounded-3xl p-4 sm:p-6">
+        <div class="flex items-center justify-between gap-3 mb-4 sm:mb-5">
+          <div>
+            <h3 class="font-serif-cjk text-base sm:text-lg font-bold text-stone-800 flex items-center gap-2"><i class="fa-solid fa-award text-amber-500"></i> 我的成就</h3>
+            <p class="text-[11px] sm:text-xs text-stone-400 mt-1">每完成一項植物管理行動，就離下一個成就更近一步。</p>
+          </div>
+          <span class="shrink-0 text-xs font-bold text-amber-700 bg-amber-50 border border-amber-100 px-3 py-1.5 rounded-full">${unlockedCount}/${totalBadges}</span>
+        </div>
+        <div class="h-2.5 rounded-full bg-stone-100 overflow-hidden mb-5">
+          <div class="h-full bg-gradient-to-r from-amber-400 to-emerald-500 rounded-full transition-all duration-700" style="width:${badgePct}%"></div>
+        </div>
+        <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">${badgeWall}</div>
+      </div>
+
+      <div class="grid md:grid-cols-2 gap-4 sm:gap-6">
+        ${nextGoal}
+        <div class="bg-white/80 backdrop-blur-md border border-white/40 shadow-xl rounded-2xl sm:rounded-3xl p-4 sm:p-5">
+          <div class="flex items-center gap-3">
+            <div class="w-11 h-11 rounded-2xl bg-emerald-50 flex items-center justify-center shrink-0"><i class="fa-solid fa-seedling text-emerald-600"></i></div>
+            <div><p class="text-xs text-stone-400">目前園丁等級</p><p class="font-serif-cjk text-lg font-bold text-stone-800">Lv.${Math.floor(state.xp/100)+1} 園丁</p></div>
+          </div>
+          <div class="mt-4 flex items-center justify-between text-[11px] text-stone-500"><span>經驗值</span><b class="text-emerald-700">${state.xp%100}/100 XP</b></div>
+          <div class="h-2.5 rounded-full bg-stone-100 mt-1.5 overflow-hidden"><div class="h-full bg-gradient-to-r from-amber-400 to-emerald-500 transition-all duration-500" style="width:${state.xp%100}%"></div></div>
+        </div>
+      </div>
+    </div>`;
+}
+
+/* =========================================================================
+   植物總表
+========================================================================= */
+function renderPlants(){
+  const selected = state.plants.find(p=>p.id===state.selectedPlantId);
+
+  // 點擊卡片後進入單株完整詳情
+  if(selected){
+    renderPlantFullDetail(selected);
+    return;
+  }
+
+  const cards = state.plants.map(p => {
+    const thumb = plantThumbUrl(p);
+    const statusClass = p.status==="存活"
+      ? "bg-emerald-100 text-emerald-700"
+      : p.status==="已出售"
+        ? "bg-stone-200 text-stone-500"
+        : "bg-red-100 text-red-600";
+
+    const photo = thumb
+      ? `<img src="${thumb}" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" alt="${esc(p.name)}" onerror="this.style.display='none';this.nextElementSibling?.classList.remove('hidden')">`
+        + `<div class="hidden absolute inset-0 grid place-items-center bg-gradient-to-br from-emerald-50 via-lime-50 to-stone-100"><i class="fa-solid fa-seedling text-emerald-500 text-5xl"></i></div>`
+      : `<div class="w-full h-full grid place-items-center bg-gradient-to-br from-emerald-50 via-lime-50 to-stone-100">
+           <i class="fa-solid fa-seedling text-emerald-500 text-5xl"></i>
+         </div>`;
+
+    return `
+      <div class="group text-left bg-white border border-stone-100 shadow-sm rounded-2xl overflow-hidden hover:-translate-y-1 hover:shadow-lg transition-all duration-300">
+        <button data-action="select-plant" data-id="${p.id}" class="block w-full text-left">
+          <div class="relative aspect-[4/3] overflow-hidden bg-stone-100">
+            ${photo}
+            <span class="absolute top-3 right-3 text-[10px] px-2.5 py-1 rounded-full font-medium ${statusClass} shadow-sm">
+              ${p.status}
+            </span>
+            <span class="absolute bottom-3 left-3 text-[10px] px-2.5 py-1 rounded-full bg-black/45 text-white backdrop-blur-sm">
+              ${esc(p.species)}
+            </span>
+          </div>
+
+          <div class="p-4 pb-3">
+            <h3 class="font-serif-cjk font-bold text-stone-800 text-base truncate">${esc(p.name)}</h3>
+
+            <div class="mt-3 space-y-2.5 text-xs text-stone-500">
+              <div class="flex items-center gap-2">
+                <span class="w-7 h-7 rounded-lg bg-sky-50 text-sky-700 grid place-items-center shrink-0">
+                  <i class="fa-solid fa-camera"></i>
+                </span>
+                <div>
+                  <p class="text-[9px] text-stone-400">照片紀錄</p>
+                  <div class="text-stone-600">${Array.isArray(p.photos) ? p.photos.length : 0} 張</div>
+                </div>
+              </div>
+              <div class="flex items-center gap-2">
+                <span class="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-700 grid place-items-center shrink-0">
+                  <i class="fa-solid fa-location-dot"></i>
+                </span>
+                <div class="min-w-0">
+                  <p class="text-[9px] text-stone-400">種植地點</p>
+                  <p class="truncate text-stone-600">${esc(p.location || "尚未設定")}</p>
+                </div>
+              </div>
+
+              <div class="flex items-center gap-2">
+                <span class="w-7 h-7 rounded-lg bg-amber-50 text-amber-700 grid place-items-center shrink-0">
+                  <i class="fa-solid fa-box"></i>
+                </span>
+                <div>
+                  <p class="text-[9px] text-stone-400">盆器大小</p>
+                  <div class="text-stone-600">${plantPotDisplay(p)}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </button>
+
+        <div class="px-4 pb-4 space-y-2">
+          <label class="w-full cursor-pointer block">
+            <span class="w-full py-2 rounded-xl border border-emerald-200 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-xs font-medium transition-all flex items-center justify-center gap-1.5">
+              <i class="fa-solid fa-camera"></i> 新增圖片
+            </span>
+            <input type="file" accept="image/*" capture="environment" class="hidden" onchange="handlePlantListPhotoUpload(event, '${p.id}')" />
+          </label>
+          <button data-action="select-plant" data-id="${p.id}"
+            class="w-full py-2.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-medium transition-all">
+            查看詳情 <i class="fa-solid fa-arrow-right ml-1"></i>
+          </button>
+        </div>
+      </div>`;
+  }).join("");
+
+  document.getElementById("main-content").innerHTML = `
+    <div class="space-y-4 sm:space-y-6">
+      <div class="flex items-end justify-between flex-wrap gap-3">
+        <div>
+          <p class="text-[11px] text-emerald-700 font-medium">我的植物管理</p>
+          <h1 class="font-serif-cjk text-xl sm:text-2xl font-bold text-stone-800 mt-1">植物總表</h1>
+          <p class="text-xs text-stone-400 mt-1">每株植物都可直接拍照，照片會保存在該植物的生長紀錄中</p>
+        </div>
+        <button data-action="open-add-plant" class="bg-gradient-to-r from-emerald-500 to-emerald-700 text-white px-4 py-2 text-sm rounded-xl font-medium shadow-md transition-all hover:scale-105 active:scale-95 flex items-center gap-1.5">
+          <i class="fa-solid fa-plus"></i> 新增植物
+        </button>
+      </div>
+
+      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4">
+        ${cards}
+      </div>
+    </div>`;
+}
+
+function renderPlantFullDetail(p){
+  const thumb = plantThumbUrl(p);
+  const marketName = state.markets.find(m=>m.id===p.source)?.name || "－";
+  const parent = p.parentId ? state.plants.find(x=>x.id===p.parentId) : null;
+  const mother = p.motherId ? state.plants.find(x=>x.id===p.motherId) : null;
+  const father = p.fatherId ? state.plants.find(x=>x.id===p.fatherId) : null;
+  const children = familyChildren(p.id);
+  const statusClass = p.status==="存活"
+    ? "bg-emerald-100 text-emerald-700"
+    : p.status==="已出售"
+      ? "bg-stone-200 text-stone-500"
+      : "bg-red-100 text-red-600";
+
+  const photo = thumb
+    ? `<img src="${thumb}" class="w-full h-full object-cover" alt="${esc(p.name)}">`
+    : `<div class="w-full h-full grid place-items-center bg-gradient-to-br from-emerald-50 to-lime-100">
+         <i class="fa-solid fa-seedling text-emerald-500 text-7xl"></i>
+       </div>`;
+
+  const info = [
+    ["植物名稱", p.name, "fa-leaf"],
+    ["品種", p.species, "fa-tag"],
+    ["種植地點", p.location || "尚未設定", "fa-location-dot"],
+    ["盆器大小", plantPotDisplay(p), "fa-box"],
+    ["種植日期", p.acquireDate || "－", "fa-calendar-days"],
+    ["取得來源", marketName, "fa-store"],
+    ["取得價格", `$${p.price ?? 0}`, "fa-coins"],
+    ["繁殖方式", `${p.propagationMethod || "未知"} · 第 ${p.generation || 1} 代`, "fa-code-branch"]
+  ];
+
+  document.getElementById("main-content").innerHTML = `
+    <div class="space-y-4 sm:space-y-5">
+      <div class="flex items-center justify-between gap-3 flex-wrap">
+        <button onclick="backToPlantList()" class="flex items-center gap-2 text-sm text-stone-500 hover:text-emerald-700">
+          <span class="w-9 h-9 rounded-full bg-white border border-stone-100 grid place-items-center shadow-sm">
+            <i class="fa-solid fa-arrow-left"></i>
+          </span>
+          返回植物總表
+        </button>
+
+        <div class="flex gap-2">
+          ${p.status==="存活" ? `
+          <button data-action="open-move" data-id="${p.id}" class="px-3 py-2 rounded-xl bg-white border border-stone-200 text-xs text-stone-600 hover:bg-stone-50">
+            <i class="fa-solid fa-box mr-1"></i>換盆／分株
+          </button>
+          <button data-action="open-sold" data-id="${p.id}" class="px-3 py-2 rounded-xl bg-amber-500 text-white text-xs hover:bg-amber-600">
+            <i class="fa-solid fa-people-arrows mr-1"></i>轉讓／出售
+          </button>` : ""}
+        </div>
+      </div>
+
+      <div class="bg-[#fffdf8] rounded-[1.8rem] border border-white shadow-sm p-4 sm:p-6">
+        <div class="grid lg:grid-cols-[300px_1fr] gap-5">
+          <div class="aspect-square rounded-3xl overflow-hidden bg-emerald-50 border border-stone-100 shadow-sm">
+            ${photo}
+          </div>
+
+          <div>
+            <div class="flex items-center gap-2 flex-wrap">
+              <h1 class="font-serif-cjk text-2xl sm:text-3xl font-bold text-stone-800">${esc(p.name)}</h1>
+              <span class="text-[10px] px-2.5 py-1 rounded-full ${statusClass}">${p.status}</span>
+            </div>
+            <p class="text-xs text-stone-400 mt-1">${p.id} · ${esc(p.species)}</p>
+
+            <div class="grid sm:grid-cols-2 gap-3 mt-5">
+              ${info.map(([label,value,icon])=>`
+                <div class="rounded-2xl bg-white border border-stone-100 p-3">
+                  <div class="flex items-center gap-2">
+                    <span class="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-700 grid place-items-center">
+                      <i class="fa-solid ${icon}"></i>
+                    </span>
+                    <div class="min-w-0">
+                      <p class="text-[10px] text-stone-400">${label}</p>
+                      <div class="text-sm text-stone-700">${label==="盆器大小" ? value : esc(String(value))}</div>
+                    </div>
+                  </div>
+                </div>`).join("")}
+            </div>
+          </div>
+        </div>
+
+        <div class="grid lg:grid-cols-2 gap-4 mt-5">
+          <section class="rounded-2xl bg-white border border-stone-100 p-4">
+            <h2 class="font-semibold text-stone-700 text-sm mb-3"><i class="fa-solid fa-dna text-emerald-600 mr-1"></i> 親本與血統</h2>
+            <div class="space-y-2 text-xs text-stone-600">
+              <div class="flex justify-between gap-3"><span class="text-stone-400">母株</span><b>${mother ? esc(mother.name) : parent ? esc(parent.name) : "未設定"}</b></div>
+              <div class="flex justify-between gap-3"><span class="text-stone-400">母系</span><b>${mother ? esc(mother.name) : "未設定"}</b></div>
+              <div class="flex justify-between gap-3"><span class="text-stone-400">父系</span><b>${father ? esc(father.name) : "未設定"}</b></div>
+              <div class="flex justify-between gap-3"><span class="text-stone-400">第幾代</span><b>第 ${p.generation || 1} 代</b></div>
+            </div>
+          </section>
+
+          <section class="rounded-2xl bg-white border border-stone-100 p-4">
+            <h2 class="font-semibold text-stone-700 text-sm mb-3"><i class="fa-solid fa-code-branch text-emerald-600 mr-1"></i> 繁育出的子代</h2>
+            ${children.length ? `
+              <div class="space-y-2">
+                ${children.map(c=>`
+                  <button onclick="focusPlantFromDetail('${c.id}')"
+                    class="w-full flex items-center justify-between gap-3 rounded-xl bg-stone-50 hover:bg-emerald-50 px-3 py-2 text-left">
+                    <span class="text-xs text-stone-700"><i class="fa-solid fa-seedling text-emerald-600 mr-1"></i>${esc(c.name)}</span>
+                    <span class="text-[10px] text-stone-400">第${c.generation||1}代 →</span>
+                  </button>`).join("")}
+              </div>` : `<p class="text-xs text-stone-400">目前尚未建立子代資料。</p>`}
+          </section>
+        </div>
+
+        <section class="mt-4 rounded-2xl bg-sky-50/70 border border-sky-100 p-4">
+          <div class="flex items-center justify-between gap-3 flex-wrap">
+            <div>
+              <h2 class="font-semibold text-sky-900 text-sm"><i class="fa-solid fa-camera mr-1"></i> 照片生長紀錄</h2>
+              <p class="text-[11px] text-sky-700/70 mt-1">照片直接隸屬於這一株植物，不再另外建立相簿頁。</p>
+            </div>
+            <label class="cursor-pointer">
+              <span class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-sky-600 hover:bg-sky-700 text-white text-xs font-medium">
+                <i class="fa-solid fa-camera"></i> 新增照片
+              </span>
+              <input type="file" accept="image/*" capture="environment" class="hidden" onchange="handlePlantListPhotoUpload(event, '${p.id}')" />
+            </label>
+          </div>
+
+          ${Array.isArray(p.photos) && p.photos.length ? `
+            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mt-4">
+              ${[...p.photos].sort((a,b)=>a.date<b.date?1:-1).map(ph=>`
+                <div class="rounded-2xl overflow-hidden bg-white border border-sky-100 shadow-sm">
+                  <div class="aspect-square bg-stone-100">
+                    <img src="${ph.url}" alt="${esc(ph.eventType || '植物照片')}" class="w-full h-full object-cover" />
+                  </div>
+                  <div class="p-2">
+                    <p class="text-[10px] text-stone-500">${esc(ph.date || "－")}</p>
+                    <p class="text-[10px] text-sky-700 truncate">${esc(ph.eventType || "一般紀錄")}</p>
+                  </div>
+                </div>`).join("")}
+            </div>
+          ` : `
+            <div class="mt-4 rounded-2xl bg-white/70 border border-dashed border-sky-200 p-6 text-center">
+              <i class="fa-regular fa-image text-sky-300 text-3xl"></i>
+              <p class="text-xs text-stone-400 mt-2">目前還沒有照片紀錄</p>
+              <p class="text-[10px] text-stone-400 mt-1">可直接從這裡拍照或選擇圖片。</p>
+            </div>
+          `}
+        </section>
+
+        <section class="mt-4 rounded-2xl bg-emerald-50/70 border border-emerald-100 p-4">
+          <h2 class="font-semibold text-emerald-900 text-sm mb-3"><i class="fa-solid fa-clock-rotate-left mr-1"></i> 盆器與場地歷程</h2>
+          ${p.moveHistory?.length ? `
+            <div class="space-y-2">
+              ${p.moveHistory.map(h=>`
+                <div class="flex items-center gap-3 bg-white/70 rounded-xl px-3 py-2 text-xs">
+                  <i class="fa-solid fa-calendar-days text-emerald-600"></i>
+                  <span>${h.date}</span>
+                  <span class="text-stone-400">·</span>
+                  <span>${esc(h.location)}</span>
+                  <span class="text-stone-400">·</span>
+                  <span>${h.potSize} 吋盆</span>
+                </div>`).join("")}
+            </div>` : `<p class="text-xs text-stone-400">尚無換盆或移動紀錄。</p>`}
+        </section>
+
+        ${p.notes ? `
+        <section class="mt-4 rounded-2xl bg-white border border-stone-100 p-4">
+          <h2 class="font-semibold text-stone-700 text-sm mb-2"><i class="fa-regular fa-note-sticky text-emerald-600 mr-1"></i> 備註</h2>
+          <p class="text-xs text-stone-600 whitespace-pre-line">${esc(p.notes)}</p>
+        </section>` : ""}
+      </div>
+    </div>`;
+}
+
+function backToPlantList(){
+  state.selectedPlantId = null;
+  renderPlants();
+}
+
+function focusPlantFromDetail(id){
+  state.selectedPlantId = id;
+  renderPlants();
+}
+/* =========================================================================
+   植株關係圖 — 這裡新增族譜邏輯：改版為「標註照片＋近期紀錄＋詳情面板」樣式
+   資料模型：parentId = 無性繁殖（分株／側芽）；motherId + fatherId = 有性繁殖（交配種）
+   每一株「有子代」的植株會顯示一張標註照片卡（母株照片上以色點＋標籤標出各個子代），
+   下方列出近期紀錄時間軸；點擊任一子代會開啟詳情面板，說明這是什麼繁殖關係並給照顧建議。
+========================================================================= */
+// 這裡新增族譜邏輯：三種血緣關係的顏色／圖示／說明文字
+const FAMILY_CATEGORY_META = {
+  "側芽": { color:"blue",   icon:"fa-seedling", desc:"從母株旁邊長出的小芽，未來長大即可分離培育成獨立植株。" },
+  "分株": { color:"purple", icon:"fa-hand-scissors", desc:"植株長大後將根莖分切開來，直接形成獨立的新植株。" },
+  "交配種": { color:"amber",  icon:"fa-dna", desc:"由母株與父株進行有性繁殖（孢子交配）所培育出的新品種。" }
+};
+const FAMILY_COLOR_CLASSES = {
+  blue:   { dot:"bg-blue-500",   pill:"bg-blue-500",   soft:"bg-blue-100 text-blue-700" },
+  purple: { dot:"bg-purple-500", pill:"bg-purple-500", soft:"bg-purple-100 text-purple-700" },
+  amber:  { dot:"bg-amber-500",  pill:"bg-amber-500",  soft:"bg-amber-100 text-amber-700" }
+};
+// 這裡新增族譜邏輯：標註色點在照片上的預設位置（依序輪流使用，避免重疊）
+const FAMILY_PIN_POSITIONS = [
+  {top:"12%", left:"66%"}, {top:"55%", left:"12%"}, {top:"70%", left:"72%"},
+  {top:"30%", left:"20%"}, {top:"78%", left:"38%"}, {top:"15%", left:"38%"}
+];
+function plantThumbUrl(p){
+  if(p.photos && p.photos.length){
+    const sorted = [...p.photos].sort((a,b)=>a.date<b.date?1:-1);
+    return sorted[0].url;
+  }
+  return null;
+}
+function statusPillClasses(status){
+  return status==="存活" ? "bg-emerald-100 text-emerald-700"
+       : status==="已出售" ? "bg-stone-200 text-stone-500"
+       : "bg-red-100 text-red-600";
+}
+// 這裡新增族譜邏輯：判斷一株植物相對於母株的繁殖關係類別
+function plantFamilyCategory(plant){
+  if(plant.motherId) return "交配種";
+  if(plant.parentId) return plant.propagationMethod==="分株" ? "分株" : "側芽";
+  return null;
+}
+// 這裡新增族譜邏輯：為每個子代自動產生一句簡短描述
+function familyChildDesc(plant, category){
+  if(category==="交配種") return `與父株進行有性繁殖後培育出的新品種，目前${plant.status}。`;
+  if(category==="分株") return `由母株分切根莖形成的獨立植株，目前${plant.status}。`;
+  return `從母株旁長出的側芽，目前${plant.status}${plant.status==="存活"?`（${plant.potSize}吋盆）`:""}。`;
+}
+// 這裡新增族譜邏輯：依植株種類給出簡短照顧建議
+function familyCareTip(plant){
+  if(plant.isStaghorn){
+    return "維持通風與適度日照，孢子葉請勿摘除；側芽長至約 3 吋大小、根系穩定後再分離較容易存活。";
+  }
+  return "分株或側芽移植後前 2 週應放置於遮陰處緩苗，並維持土壤微濕，待新根長出後再恢復正常光照與澆水頻率。";
+}
+// 這裡新增族譜邏輯：依序找出所有「擁有子代」的植株（樹狀結構的內部節點），依血緣順序排列
+function collectFamilyCards(){
+  const result = [];
+  function walk(node){
+    if(!isGenealogyPlant(node)) return;
+    if(familyChildren(node.id).length){
+      result.push(node);
+      familyChildren(node.id).forEach(walk);
+    }
+  }
+  familyRoots().forEach(walk);
+  return result;
+}
+// 這裡新增族譜邏輯：母株標註照片卡（含色點標籤）＋近期紀錄時間軸＋小知識
+function renderFamilyCard(node){
+  const children = familyChildren(node.id).slice().sort((a,b)=>a.acquireDate<b.acquireDate?1:-1);
+  const thumb = plantThumbUrl(node);
+  const meta = plantStatusMeta(node);
+  const parent = primaryParentId(node) ? state.plants.find(p=>p.id===primaryParentId(node)) : null;
+
+  const pins = children.map((c, i) => {
+    const cat = plantFamilyCategory(c);
+    const colorCls = FAMILY_COLOR_CLASSES[FAMILY_CATEGORY_META[cat].color];
+    const pos = FAMILY_PIN_POSITIONS[i % FAMILY_PIN_POSITIONS.length];
+    return `<button data-action="open-family-detail" data-id="${c.id}"
+      class="absolute flex items-center gap-1 transition-all duration-300 hover:scale-105 active:scale-95"
+      style="top:${pos.top}; left:${pos.left};">
+      <span class="w-3 h-3 rounded-full ${colorCls.dot} ring-2 ring-white shadow shrink-0"></span>
+      <span class="h-0.5 w-3 sm:w-4 ${colorCls.dot} opacity-70"></span>
+      <span class="text-[10px] sm:text-[11px] px-2 py-1 rounded-full font-medium text-white shadow whitespace-nowrap ${colorCls.pill}">${esc(c.name)}${cat!=="交配種"?` · ${esc(cat)}`:""}</span>
+    </button>`;
+  }).join("");
+
+  return `<div class="bg-white border border-stone-100 shadow-sm rounded-2xl sm:rounded-[1.65rem] p-4 sm:p-6">
+    <div class="flex items-start justify-between gap-3 flex-wrap mb-4">
+      <div class="flex items-center gap-3 min-w-0">
+        <span class="relative w-14 h-14 sm:w-16 sm:h-16 shrink-0 rounded-2xl overflow-hidden shadow-md border-2 border-white bg-emerald-50">
+          ${thumb ? `<img src="${thumb}" class="w-full h-full object-cover" alt="${esc(node.name)}" />`
+                  : `<span class="w-full h-full flex items-center justify-center bg-gradient-to-br from-emerald-200 to-emerald-400"><i class="fa-solid fa-seedling text-emerald-700"></i></span>`}
+          <span class="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full ${meta.dot} border-2 border-white"></span>
+        </span>
+        <div class="min-w-0">
+          <div class="flex items-center gap-2 flex-wrap">
+            <p class="font-serif-cjk text-base sm:text-lg font-bold text-stone-800 truncate">${esc(node.name)}</p>
+            <span class="text-[10px] px-2 py-0.5 rounded-full font-medium ${statusPillClasses(node.status)}">${node.status}</span>
+          </div>
+          <p class="text-[11px] sm:text-xs text-stone-400 truncate">${node.id} · ${esc(node.species)}${parent ? ` · 母株：${esc(parent.name)}` : ""}</p>
+        </div>
+      </div>
+      <span class="text-[11px] px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 font-medium shrink-0">第${node.generation}代</span>
+    </div>
+
+    <p class="text-xs font-medium text-stone-500 mb-2 flex items-center gap-1.5"><i class="fa-solid fa-layer-group text-emerald-500"></i> 目前家族狀況</p>
+    <div class="relative w-full h-44 sm:h-56 rounded-2xl overflow-hidden bg-emerald-50 mb-4 border border-emerald-100">
+      ${thumb ? `<img src="${thumb}" class="w-full h-full object-cover" alt="${esc(node.name)}" />`
+              : `<div class="w-full h-full flex items-center justify-center bg-gradient-to-br from-emerald-100 to-emerald-300"><i class="fa-solid fa-seedling text-emerald-500 text-3xl"></i></div>`}
+      ${pins}
+    </div>
+
+    <p class="text-xs font-medium text-stone-500 mb-2 flex items-center gap-1.5"><i class="fa-solid fa-clock-rotate-left text-emerald-500"></i> 近期紀錄</p>
+    <div class="space-y-2 mb-4">
+      ${children.map(c => {
+        const cat = plantFamilyCategory(c);
+        const cm = FAMILY_CATEGORY_META[cat];
+        const colorCls = FAMILY_COLOR_CLASSES[cm.color];
+        const cthumb = plantThumbUrl(c);
+        return `<button data-action="open-family-detail" data-id="${c.id}" class="w-full flex items-center gap-3 text-left bg-stone-50 hover:bg-stone-100 rounded-2xl px-3 py-2.5 transition-all duration-300 active:scale-[0.99]">
+          <span class="relative w-11 h-11 shrink-0 rounded-xl overflow-hidden ${colorCls.soft} flex items-center justify-center">
+            ${cthumb ? `<img src="${cthumb}" class="w-full h-full object-cover" />` : `<i class="fa-solid ${cm.icon}"></i>`}
+          </span>
+          <span class="min-w-0 flex-1">
+            <span class="flex items-center gap-1.5 flex-wrap">
+              <span class="text-[10px] px-1.5 py-0.5 rounded-full text-white font-medium ${colorCls.pill}">${esc(cat)}</span>
+              <span class="text-sm font-medium text-stone-700 truncate">${esc(c.name)}</span>
+            </span>
+            <span class="block text-[11px] text-stone-400 truncate">${c.acquireDate} · ${esc(familyChildDesc(c, cat))}</span>
+          </span>
+          <span class="w-2.5 h-2.5 rounded-full ${plantStatusMeta(c).dot} shrink-0"></span>
+        </button>`;
+      }).join("")}
+    </div>
+
+    <div class="bg-emerald-50/70 border border-emerald-100 rounded-xl px-4 py-3 flex items-start gap-2">
+      <i class="fa-solid fa-lightbulb text-emerald-500 mt-0.5"></i>
+      <p class="text-xs text-emerald-800 leading-relaxed">${familyCareTip(node)}</p>
+    </div>
+  </div>`;
+}
+function renderStandaloneCard(plant){
+  const thumb = plantThumbUrl(plant);
+  const meta = plantStatusMeta(plant);
+  return `<div class="bg-white/70 border border-white/40 rounded-2xl p-3 flex items-center gap-3">
+    <span class="relative w-12 h-12 shrink-0 rounded-xl overflow-hidden shadow-sm border-2 border-white bg-emerald-50">
+      ${thumb ? `<img src="${thumb}" class="w-full h-full object-cover" />` : `<span class="w-full h-full flex items-center justify-center bg-gradient-to-br from-emerald-200 to-emerald-400"><i class="fa-solid fa-seedling text-emerald-700 text-sm"></i></span>`}
+      <span class="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full ${meta.dot} border-2 border-white"></span>
+    </span>
+    <div class="min-w-0 flex-1">
+      <p class="text-sm font-medium text-stone-700 truncate">${esc(plant.name)}</p>
+      <p class="text-[11px] text-stone-400 truncate">${plant.id} · ${esc(plant.species)}</p>
+    </div>
+    <span class="text-[10px] px-2 py-0.5 rounded-full font-medium shrink-0 ${statusPillClasses(plant.status)}">${plant.status}</span>
+  </div>`;
+}
+function focusGenealogy(id){
+  state.genealogyFocusId = id;
+  renderGenealogy();
+}
+function renderGenealogy(){
+  const roots = familyRoots();
+  const selectedRaw = state.genealogyFocusId ? state.plants.find(p=>p.id===state.genealogyFocusId) : null;
+  // 非鹿角蕨不應進入家族族譜；若目前焦點不是鹿角蕨，回到族譜首頁。
+  const selected = isGenealogyPlant(selectedRaw) ? selectedRaw : null;
+
+  /* 首頁：所有母株總覽 */
+  if(!selected){
+    const motherPlants = roots;
+    document.getElementById("main-content").innerHTML = `
+      <div class="space-y-5">
+
+        <div class="flex items-start justify-between gap-3 flex-wrap">
+          <div>
+            <p class="text-[11px] text-emerald-700 font-medium">珍稀植物 × 繁育管理</p>
+            <h1 class="font-serif-cjk text-2xl sm:text-3xl font-bold text-stone-800 mt-1">🌿 我的植物家族</h1>
+            <p class="text-sm text-stone-500 mt-1">鹿角蕨會自動加入家族族譜；非鹿角蕨不建立族譜關係。先選擇一株母株，再查看它的側芽、分芽、分株與其他子代。</p>
+          </div>
+          <button data-action="open-add-plant"
+            class="bg-emerald-700 hover:bg-emerald-800 text-white px-4 py-2.5 text-sm rounded-xl font-medium shadow-md">
+            <i class="fa-solid fa-plus mr-1"></i> 新增植物
+          </button>
+        </div>
+
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          <div class="bg-white rounded-2xl border border-stone-100 p-4 shadow-sm">
+            <p class="text-xs text-stone-400">母株</p>
+            <p class="text-2xl font-bold text-stone-800 mt-1">${motherPlants.length}</p>
+          </div>
+          <div class="bg-white rounded-2xl border border-stone-100 p-4 shadow-sm">
+            <p class="text-xs text-stone-400">繁育子代</p>
+            <p class="text-2xl font-bold text-emerald-700 mt-1">${state.plants.filter(p=>primaryParentId(p)).length}</p>
+          </div>
+          <div class="bg-white rounded-2xl border border-stone-100 p-4 shadow-sm">
+            <p class="text-xs text-stone-400">最高世代</p>
+            <p class="text-2xl font-bold text-stone-800 mt-1">${Math.max(1,...state.plants.map(p=>Number(p.generation)||1))} 代</p>
+          </div>
+          <div class="bg-white rounded-2xl border border-stone-100 p-4 shadow-sm">
+            <p class="text-xs text-stone-400">可追溯血統</p>
+            <p class="text-2xl font-bold text-emerald-700 mt-1">${state.plants.filter(p=>primaryParentId(p)).length ? "100%" : "—"}</p>
+          </div>
+        </div>
+
+        <div class="bg-[#fffdf8] rounded-[1.8rem] border border-white shadow-sm p-4 sm:p-6">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h2 class="font-semibold text-stone-700">🌱 所有母株</h2>
+              <p class="text-xs text-stone-400 mt-1">點擊母株進入，查看這株植物繁育出的所有成員。</p>
+            </div>
+            <span class="text-xs px-3 py-1.5 rounded-full bg-emerald-50 text-emerald-700">${motherPlants.length} 株</span>
+          </div>
+
+          <div class="grid md:grid-cols-2 xl:grid-cols-3 gap-4">
+            ${motherPlants.map(mother=>{
+              const children = familyChildren(mother.id);
+              const thumb = plantThumbUrl(mother);
+              const categories = [...new Set(children.map(plantFamilyCategory).filter(Boolean))];
+              const meta = plantStatusMeta(mother);
+              return `
+                <button onclick="focusGenealogy('${mother.id}')"
+                  class="text-left bg-white border border-stone-100 rounded-2xl p-4 hover:border-emerald-300 hover:shadow-md transition-all group">
+                  <div class="flex gap-3">
+                    <div class="relative w-20 h-20 rounded-2xl overflow-hidden bg-emerald-50 shrink-0 border border-stone-100">
+                      ${thumb
+                        ? `<img src="${thumb}" class="w-full h-full object-cover" alt="${esc(mother.name)}">`
+                        : `<div class="w-full h-full grid place-items-center bg-gradient-to-br from-emerald-100 to-emerald-300"><i class="fa-solid fa-seedling text-emerald-600 text-2xl"></i></div>`}
+                      <span class="absolute bottom-1 right-1 w-3 h-3 rounded-full ${meta.dot} border-2 border-white"></span>
+                    </div>
+                    <div class="min-w-0 flex-1">
+                      <div class="flex items-start justify-between gap-2">
+                        <div>
+                          <p class="font-serif-cjk font-bold text-stone-800 group-hover:text-emerald-700">${esc(mother.name)}</p>
+                          <p class="text-[11px] text-stone-400 mt-0.5">${esc(mother.species)}</p>
+                        </div>
+                        <i class="fa-solid fa-chevron-right text-stone-300 group-hover:text-emerald-600 mt-1"></i>
+                      </div>
+                      <div class="flex flex-wrap gap-1.5 mt-3">
+                        <span class="text-[10px] px-2 py-1 rounded-full bg-emerald-50 text-emerald-700">母株</span>
+                        <span class="text-[10px] px-2 py-1 rounded-full bg-stone-50 text-stone-500">第 ${mother.generation||1} 代</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="grid grid-cols-3 gap-2 mt-4">
+                    <div class="bg-emerald-50 rounded-xl p-2 text-center">
+                      <b class="block text-emerald-700">${children.length}</b>
+                      <span class="text-[9px] text-stone-500">子代</span>
+                    </div>
+                    <div class="bg-sky-50 rounded-xl p-2 text-center">
+                      <b class="block text-sky-700">${children.filter(c=>plantFamilyCategory(c)==="側芽").length}</b>
+                      <span class="text-[9px] text-stone-500">側芽</span>
+                    </div>
+                    <div class="bg-violet-50 rounded-xl p-2 text-center">
+                      <b class="block text-violet-700">${children.filter(c=>plantFamilyCategory(c)==="分株").length}</b>
+                      <span class="text-[9px] text-stone-500">分株</span>
+                    </div>
+                  </div>
+
+                  <div class="mt-3 flex items-center gap-1.5 flex-wrap">
+                    ${categories.length
+                      ? categories.map(c=>`<span class="text-[9px] px-2 py-1 rounded-full bg-stone-50 text-stone-500">${c}</span>`).join("")
+                      : `<span class="text-[10px] text-stone-400">尚未建立子代紀錄</span>`}
+                  </div>
+                </button>`;
+            }).join("")}
+          </div>
+        </div>
+      </div>`;
+    return;
+  }
+
+  /* 詳細頁：母株 → 所有側芽／分芽／分株／交配子代 */
+  const focus = selected;
+  const children = familyChildren(focus.id).slice().sort((a,b)=>a.acquireDate<b.acquireDate?1:-1);
+  const thumb = plantThumbUrl(focus);
+  const meta = plantStatusMeta(focus);
+  const byCategory = {
+    "側芽": children.filter(c=>plantFamilyCategory(c)==="側芽"),
+    "分株": children.filter(c=>plantFamilyCategory(c)==="分株"),
+    "交配種": children.filter(c=>plantFamilyCategory(c)==="交配種")
+  };
+
+  document.getElementById("main-content").innerHTML = `
+    <div class="space-y-5">
+
+      <div class="flex items-center justify-between gap-3 flex-wrap">
+        <button onclick="backToGenealogyRoots()"
+          class="flex items-center gap-2 text-sm text-stone-500 hover:text-emerald-700">
+          <span class="w-9 h-9 rounded-full bg-white border border-stone-100 grid place-items-center shadow-sm">
+            <i class="fa-solid fa-arrow-left"></i>
+          </span>
+          返回所有母株
+        </button>
+
+        <button data-action="open-add-plant"
+          class="bg-emerald-700 hover:bg-emerald-800 text-white px-4 py-2.5 text-sm rounded-xl font-medium shadow-md">
+          <i class="fa-solid fa-plus mr-1"></i> 新增子代
+        </button>
+      </div>
+
+      <div class="bg-[#fffdf8] rounded-[1.8rem] border border-white shadow-sm p-4 sm:p-6">
+
+        <div class="flex items-start gap-4">
+          <div class="relative w-24 h-24 sm:w-28 sm:h-28 rounded-2xl overflow-hidden bg-emerald-50 shrink-0 border border-stone-100">
+            ${thumb
+              ? `<img src="${thumb}" class="w-full h-full object-cover" alt="${esc(focus.name)}">`
+              : `<div class="w-full h-full grid place-items-center bg-gradient-to-br from-emerald-100 to-emerald-300"><i class="fa-solid fa-seedling text-emerald-600 text-4xl"></i></div>`}
+            <span class="absolute bottom-1 right-1 w-3.5 h-3.5 rounded-full ${meta.dot} border-2 border-white"></span>
+          </div>
+
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-2 flex-wrap">
+              <h1 class="font-serif-cjk text-2xl font-bold text-stone-800">${esc(focus.name)}</h1>
+              <span class="text-[10px] px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-700 font-medium">母株</span>
+              <span class="text-[10px] px-2.5 py-1 rounded-full ${statusPillClasses(focus.status)}">${focus.status}</span>
+            </div>
+            <p class="text-xs text-stone-400 mt-1">${focus.id} · ${esc(focus.species)} · 第 ${focus.generation||1} 代</p>
+
+            <div class="grid sm:grid-cols-3 gap-3 mt-4">
+              <div><p class="text-[10px] text-stone-400">種植日期</p><p class="text-xs font-medium text-stone-700">${focus.acquireDate}</p></div>
+              <div><p class="text-[10px] text-stone-400">種植位置</p><p class="text-xs font-medium text-stone-700">${esc(focus.location)}</p></div>
+              <div><p class="text-[10px] text-stone-400">繁育成員</p><p class="text-xs font-medium text-emerald-700">${children.length} 株</p></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-3 gap-2 mt-5">
+          <div class="rounded-xl bg-sky-50 py-3 text-center"><b class="block text-sky-700 text-lg">${byCategory["側芽"].length}</b><span class="text-[10px] text-stone-500">側芽</span></div>
+          <div class="rounded-xl bg-violet-50 py-3 text-center"><b class="block text-violet-700 text-lg">${byCategory["分株"].length}</b><span class="text-[10px] text-stone-500">分株</span></div>
+          <div class="rounded-xl bg-amber-50 py-3 text-center"><b class="block text-amber-700 text-lg">${byCategory["交配種"].length}</b><span class="text-[10px] text-stone-500">交配子代</span></div>
+        </div>
+
+        <div class="mt-6">
+          <div class="flex items-center justify-between gap-2 mb-3">
+            <div>
+              <h2 class="font-semibold text-stone-700">🌱 這株母株繁育出的成員</h2>
+              <p class="text-xs text-stone-400 mt-1">點擊任一成員，可以繼續往下一代查看。</p>
+            </div>
+            <span class="text-xs text-emerald-700">${children.length} 株</span>
+          </div>
+
+          ${children.length ? `
+          <div class="grid sm:grid-cols-2 xl:grid-cols-3 gap-3">
+            ${children.map(c=>{
+              const cat = plantFamilyCategory(c) || "子代";
+              const cm = FAMILY_CATEGORY_META[cat] || FAMILY_CATEGORY_META["側芽"];
+              const colorCls = FAMILY_COLOR_CLASSES[cm.color];
+              const cthumb = plantThumbUrl(c);
+              return `
+                <button onclick="focusGenealogy('${c.id}')"
+                  class="text-left border border-stone-100 bg-white rounded-2xl p-3 hover:border-emerald-300 hover:shadow-md transition-all">
+                  <div class="flex gap-3">
+                    <div class="w-16 h-16 rounded-xl overflow-hidden shrink-0 ${colorCls.soft}">
+                      ${cthumb
+                        ? `<img src="${cthumb}" class="w-full h-full object-cover" alt="${esc(c.name)}">`
+                        : `<div class="w-full h-full grid place-items-center"><i class="fa-solid ${cm.icon}"></i></div>`}
+                    </div>
+                    <div class="min-w-0 flex-1">
+                      <div class="flex items-center justify-between gap-2">
+                        <span class="text-[9px] px-2 py-1 rounded-full text-white ${colorCls.pill}">${esc(cat)}</span>
+                        <i class="fa-solid fa-chevron-right text-stone-300"></i>
+                      </div>
+                      <p class="font-medium text-stone-700 text-sm mt-2 truncate">${esc(c.name)}</p>
+                      <p class="text-[10px] text-stone-400 mt-0.5">第 ${c.generation||1} 代 · ${c.acquireDate}</p>
+                    </div>
+                  </div>
+                  <p class="text-[10px] text-stone-500 mt-3 line-clamp-2">${esc(familyChildDesc(c,cat))}</p>
+                </button>`;
+            }).join("")}
+          </div>` : `
+            <div class="rounded-2xl bg-stone-50 p-8 text-center">
+              <i class="fa-solid fa-seedling text-emerald-300 text-3xl"></i>
+              <p class="text-sm text-stone-500 mt-2">這株母株目前還沒有子代紀錄</p>
+              <p class="text-xs text-stone-400 mt-1">之後可以從新增植物建立側芽、分芽或分株。</p>
+            </div>`}
+        </div>
+
+        <div class="mt-6 bg-emerald-50/70 border border-emerald-100 rounded-2xl p-4">
+          <div class="flex items-center justify-between gap-2 mb-3">
+            <h3 class="font-semibold text-emerald-900 text-sm">🧬 家族血統</h3>
+            <span class="text-[10px] text-emerald-700">目前母株：${esc(focus.name)}</span>
+          </div>
+          <div class="flex items-center gap-2 overflow-x-auto pb-1">
+            ${bgFamilyPath(focus.id)}
+          </div>
+        </div>
+      </div>
+    </div>`;
+}
+
+function backToGenealogyRoots(){
+  state.genealogyFocusId = null;
+  renderGenealogy();
+}
+
+function bgFamilyPath(id){
+  const path=[];
+  let current=state.plants.find(p=>p.id===id);
+  while(current){
+    path.unshift(current);
+    const parent=primaryParentId(current);
+    current=parent ? state.plants.find(p=>p.id===parent) : null;
+  }
+  return path.map((p,i)=>`
+    <button onclick="focusGenealogy('${p.id}')"
+      class="shrink-0 flex items-center gap-2 px-3 py-2 rounded-xl bg-white border ${p.id===id?'border-emerald-400':'border-stone-100'} hover:border-emerald-300">
+      <i class="fa-solid fa-seedling text-emerald-600"></i>
+      <span class="text-xs font-medium text-stone-700">${esc(p.name)}</span>
+      <span class="text-[9px] text-stone-400">第${p.generation||1}代</span>
+    </button>
+    ${i<path.length-1?'<i class="fa-solid fa-chevron-right text-stone-300 shrink-0"></i>':''}
+  `).join("");
+}
+
+function renderMarket(){
+  const stats = marketStats().sort((a,b)=>b.rate-a.rate);
+  const marketOptions = state.markets.map(m=>`<option value="${m.id}">${esc(m.name)}</option>`).join("");
+  const locationOptions = LOCATIONS.map(l=>`<option value="${esc(l)}">${esc(l)}</option>`).join("");
+  document.getElementById("main-content").innerHTML = `
+    <div class="space-y-4 sm:space-y-6">
+      <h1 class="font-serif-cjk text-xl sm:text-2xl font-bold text-stone-800">花市與採購</h1>
+
+      <div class="bg-white/80 backdrop-blur-md border border-white/40 shadow-xl rounded-2xl sm:rounded-3xl p-4 sm:p-6">
+        <div class="flex items-start justify-between gap-3 mb-4">
+          <div>
+            <h3 class="font-serif-cjk text-base sm:text-lg font-bold text-stone-800 flex items-center gap-2"><i class="fa-solid fa-bag-shopping text-emerald-600"></i> 記錄這次買入</h3>
+            <p class="text-xs text-stone-400 mt-1">送出後會自動新增到「植物總表」和採購歷史。</p>
+          </div>
+          <span class="text-2xl" aria-hidden="true">🪴</span>
+        </div>
+        <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          <label class="block"><span class="text-xs font-medium text-stone-500 mb-1 block">植物名稱 *</span><input id="mp-name" class="w-full px-3 py-2 rounded-xl border border-stone-200 bg-white/70 text-sm" placeholder="例如：彩葉芋" /></label>
+          <label class="block"><span class="text-xs font-medium text-stone-500 mb-1 block">品種／學名</span><input id="mp-species" class="w-full px-3 py-2 rounded-xl border border-stone-200 bg-white/70 text-sm" placeholder="未填則同植物名稱" /></label>
+          <label class="block"><span class="text-xs font-medium text-stone-500 mb-1 block">購買花市 *</span><select id="mp-source" class="w-full px-3 py-2 rounded-xl border border-stone-200 bg-white/70 text-sm">${marketOptions}</select></label>
+          <label class="block"><span class="text-xs font-medium text-stone-500 mb-1 block">買入價格（元）</span><input id="mp-price" type="number" min="0" class="w-full px-3 py-2 rounded-xl border border-stone-200 bg-white/70 text-sm" placeholder="例如：350" /></label>
+          <label class="block"><span class="text-xs font-medium text-stone-500 mb-1 block">購買日期</span><input id="mp-date" type="date" value="${todayStr()}" class="w-full px-3 py-2 rounded-xl border border-stone-200 bg-white/70 text-sm" /></label>
+          <label class="block"><span class="text-xs font-medium text-stone-500 mb-1 block">放置位置</span><select id="mp-location" class="w-full px-3 py-2 rounded-xl border border-stone-200 bg-white/70 text-sm">${locationOptions}</select></label>
+          <label class="block"><span class="text-xs font-medium text-stone-500 mb-1 block">盆器尺寸（吋）</span><input id="mp-pot" type="number" min="1" value="4" class="w-full px-3 py-2 rounded-xl border border-stone-200 bg-white/70 text-sm" /></label>
+          <label class="flex items-end gap-2 pb-2 text-sm text-stone-600"><input id="mp-staghorn" type="checkbox" class="accent-emerald-600" /> 鹿角蕨</label>
+          <div class="flex items-end"><button data-action="submit-market-purchase" class="w-full bg-gradient-to-r from-emerald-500 to-emerald-700 text-white px-4 py-2.5 text-sm rounded-xl font-medium shadow-md transition-all duration-300 hover:scale-[1.02] active:scale-95"><i class="fa-solid fa-plus mr-1"></i> 新增買入紀錄</button></div>
+        </div>
+      </div>
+
+      <div class="bg-white/80 backdrop-blur-md border border-white/40 shadow-xl rounded-2xl sm:rounded-3xl p-4 sm:p-6">
+        <div class="flex items-center justify-between mb-4 flex-wrap gap-2">
+          <h3 class="font-serif-cjk text-base sm:text-lg font-bold text-stone-800 flex items-center gap-2"><i class="fa-solid fa-basket-shopping text-emerald-600"></i> 花市 / 賣家名冊</h3>
+          <div class="flex flex-wrap gap-2 w-full sm:w-auto">
+            <input id="new-market-name" class="flex-1 min-w-0 sm:w-40 sm:flex-none px-3 py-2 rounded-xl border border-stone-200 bg-white/70 text-sm" placeholder="新增花市名稱" />
+            <button data-action="submit-market" class="bg-gradient-to-r from-emerald-500 to-emerald-700 text-white px-3 py-1.5 text-xs rounded-xl font-medium shadow-md transition-all duration-300 hover:scale-105 active:scale-95"><i class="fa-solid fa-plus"></i> 新增</button>
+          </div>
+        </div>
+        <div class="grid sm:grid-cols-3 gap-3">
+          ${state.markets.map(m=>`<div class="bg-stone-50 rounded-2xl px-4 py-3 text-sm text-stone-700 flex items-center gap-2"><i class="fa-solid fa-basket-shopping text-emerald-500"></i> ${esc(m.name)}</div>`).join("")}
+        </div>
+      </div>
+
+      <div class="bg-white/80 backdrop-blur-md border border-white/40 shadow-xl rounded-2xl sm:rounded-3xl p-4 sm:p-6">
+        <h3 class="font-serif-cjk text-base sm:text-lg font-bold text-stone-800 flex items-center gap-2 mb-3 sm:mb-4"><i class="fa-solid fa-arrow-trend-up text-emerald-600"></i> 花市存活率排行</h3>
+        <div class="space-y-3">
+          ${stats.map(m=>`<div>
+            <div class="flex flex-wrap justify-between gap-x-2 gap-y-0.5 text-xs text-stone-500 mb-1"><span>${esc(m.name)}</span><span>${m.alive}/${m.total} 存活（${m.rate}%）</span></div>
+            <div class="h-3 rounded-full bg-stone-100 overflow-hidden"><div class="h-full bg-gradient-to-r from-amber-400 to-emerald-500 transition-all duration-700" style="width:${m.rate}%"></div></div>
+          </div>`).join("")}
+        </div>
+      </div>
+
+      <div class="bg-white/80 backdrop-blur-md border border-white/40 shadow-xl rounded-2xl sm:rounded-3xl p-4 sm:p-6">
+        <div class="flex items-center justify-between gap-3 mb-4 flex-wrap">
+          <div>
+            <h3 class="font-serif-cjk text-base sm:text-lg font-bold text-stone-800 flex items-center gap-2">
+              <i class="fa-solid fa-calendar-days text-emerald-600"></i> 採購歷史
+            </h3>
+            <p class="text-[11px] text-stone-400 mt-1">依花市／賣家分類，同一來源的採購紀錄集中顯示</p>
+          </div>
+          <span class="text-[11px] px-3 py-1.5 rounded-full bg-emerald-50 text-emerald-700 font-medium">
+            共 ${state.plants.length} 筆紀錄
+          </span>
+        </div>
+
+        <div class="space-y-3 max-h-[30rem] overflow-y-auto pr-1">
+          ${state.markets.map(m=>{
+            const purchases = state.plants
+              .filter(p=>p.source===m.id)
+              .sort((a,b)=>(b.acquireDate||"").localeCompare(a.acquireDate||""));
+            const total = purchases.reduce((sum,p)=>sum+(Number(p.price)||0),0);
+            return `
+              <div class="rounded-2xl border border-emerald-100 bg-emerald-50/45 overflow-hidden">
+                <div class="flex items-center justify-between gap-3 px-4 py-3 bg-white/70 border-b border-emerald-100 flex-wrap">
+                  <div class="flex items-center gap-2 min-w-0">
+                    <span class="w-9 h-9 rounded-xl bg-emerald-100 text-emerald-700 grid place-items-center shrink-0">
+                      <i class="fa-solid fa-store"></i>
+                    </span>
+                    <div class="min-w-0">
+                      <p class="font-bold text-sm text-stone-800 truncate">${esc(m.name)}</p>
+                      <p class="text-[10px] text-stone-400">${purchases.length} 筆採購紀錄</p>
+                    </div>
+                  </div>
+                  <div class="text-right shrink-0">
+                    <p class="text-[10px] text-stone-400">累計花費</p>
+                    <p class="font-bold text-emerald-700">$${total.toLocaleString()}</p>
+                  </div>
+                </div>
+
+                ${purchases.length ? `
+                  <div class="divide-y divide-emerald-100/70">
+                    ${purchases.map(p=>`
+                      <div class="flex items-center justify-between gap-3 px-4 py-3 text-xs bg-white/40">
+                        <div class="min-w-0">
+                          <p class="font-medium text-stone-700 truncate">${esc(p.name)}</p>
+                          <p class="text-[10px] text-stone-400 mt-0.5">${p.acquireDate||"未填日期"} · ${esc(p.species||"未分類")}</p>
+                        </div>
+                        <span class="font-bold text-stone-600 shrink-0">$${(Number(p.price)||0).toLocaleString()}</span>
+                      </div>
+                    `).join("")}
+                  </div>
+                ` : `
+                  <div class="px-4 py-4 text-xs text-stone-400 text-center">目前尚無此花市的採購紀錄</div>
+                `}
+              </div>`;
+          }).join("")}
+
+          ${(()=>{
+            const others = state.plants
+              .filter(p=>!state.markets.some(m=>m.id===p.source))
+              .sort((a,b)=>(b.acquireDate||"").localeCompare(a.acquireDate||""));
+            if(!others.length) return "";
+            const total = others.reduce((sum,p)=>sum+(Number(p.price)||0),0);
+            return `
+              <div class="rounded-2xl border border-stone-200 bg-stone-50/70 overflow-hidden">
+                <div class="flex items-center justify-between gap-3 px-4 py-3 bg-white/70 border-b border-stone-200 flex-wrap">
+                  <div class="flex items-center gap-2">
+                    <span class="w-9 h-9 rounded-xl bg-stone-100 text-stone-500 grid place-items-center">
+                      <i class="fa-solid fa-circle-question"></i>
+                    </span>
+                    <div>
+                      <p class="font-bold text-sm text-stone-700">其他／未指定來源</p>
+                      <p class="text-[10px] text-stone-400">${others.length} 筆採購紀錄</p>
+                    </div>
+                  </div>
+                  <div class="text-right">
+                    <p class="text-[10px] text-stone-400">累計花費</p>
+                    <p class="font-bold text-stone-600">$${total.toLocaleString()}</p>
+                  </div>
+                </div>
+                <div class="divide-y divide-stone-200">
+                  ${others.map(p=>`
+                    <div class="flex items-center justify-between gap-3 px-4 py-3 text-xs bg-white/40">
+                      <div class="min-w-0">
+                        <p class="font-medium text-stone-700 truncate">${esc(p.name)}</p>
+                        <p class="text-[10px] text-stone-400 mt-0.5">${p.acquireDate||"未填日期"} · ${esc(p.species||"未分類")}</p>
+                      </div>
+                      <span class="font-bold text-stone-600 shrink-0">$${(Number(p.price)||0).toLocaleString()}</span>
+                    </div>
+                  `).join("")}
+                </div>
+              </div>`;
+          })()}
+        </div>
+      </div>
+
+    </div>`;
+}
+
+/* =========================================================================
+   耗材與堆肥
+========================================================================= */
+function renderMaterials(){
+  const presetsHtml = state.cnPresets.map(c=>`
+    <div class="flex items-center gap-2 text-xs bg-stone-50 rounded-xl px-3 py-2">
+      <input class="px-2 py-1 rounded-lg border border-stone-200 bg-white text-xs flex-1 min-w-0" value="${esc(c.name)}" onchange="updateCnPreset('${c.id}','name',this.value)" />
+      <input type="number" class="px-2 py-1 rounded-lg border border-stone-200 bg-white text-xs w-16" value="${c.ratio}" onchange="updateCnPreset('${c.id}','ratio',this.value)" />
+      <span class="text-stone-400 shrink-0">:1</span>
+      <button data-action="remove-preset" data-id="${c.id}" class="p-1.5 rounded-full hover:bg-stone-200 transition-all duration-300"><i class="fa-solid fa-trash text-stone-400"></i></button>
+    </div>`).join("");
+
+  const totalMaterialCost = state.materials.reduce((s,m)=>s+(m.stock*(m.unitCost||0)),0);
+
+  const compostHtml = state.compostBins.map(bin=>{
+    const ratio = binCNRatio(bin);
+    const nitrogenHeavy = ratio!==null && ratio<25;
+    const presetOptions = state.cnPresets.map(c=>`<option value="${esc(c.name)}">${esc(c.name)}</option>`).join("");
+    const totalWeight = bin.inputs.reduce((s,i)=>s+i.weight,0);
+    const target = bin.targetWeight || 0;
+    const remaining = Math.max(0, target - totalWeight);
+    const weightPct = target ? Math.min(100, Math.round((totalWeight/target)*100)) : 0;
+    return `<div class="bg-stone-50 rounded-2xl p-4">
+      <p class="text-sm font-medium text-stone-700 mb-1">${esc(bin.name)} <span class="text-[11px] text-stone-400">（${bin.type}）</span></p>
+      <div class="h-3 rounded-full bg-white overflow-hidden mb-1 border border-stone-200">
+        <div class="h-full transition-all duration-700 ${nitrogenHeavy?'bg-gradient-to-r from-orange-400 to-orange-600':'bg-gradient-to-r from-amber-400 to-emerald-500'}" style="width:${ratio?Math.min(100,(ratio/60)*100):0}%"></div>
+      </div>
+      <p class="text-[11px] text-stone-400 mb-2">目前碳氮比 ${ratio??"－"}${ratio?":1":""}</p>
+      ${nitrogenHeavy?`<p class="text-[11px] text-orange-600 flex items-center gap-1 mb-2"><i class="fa-solid fa-triangle-exclamation"></i> 氮含量偏高，建議加入落葉或木屑等乾料調整。</p>`:""}
+      ${target ? `
+      <div class="mb-2">
+        <div class="flex justify-between text-[11px] text-stone-400 mb-1"><span>投入進度</span><span>${totalWeight}g / ${target}g</span></div>
+        <div class="h-2.5 rounded-full bg-white overflow-hidden border border-stone-200">
+          <div class="h-full bg-gradient-to-r from-emerald-400 to-emerald-600 transition-all duration-700" style="width:${weightPct}%"></div>
+        </div>
+        <p class="text-[11px] mt-1 ${remaining>0?'text-stone-500':'text-emerald-600 font-medium'}">${remaining>0?`尚需投入約 ${remaining}g 肥料才能達到目標量`:"已達到目標肥料量！"}</p>
+      </div>` : ""}
+      <div class="flex flex-wrap gap-2">
+        <select id="compost-material-${bin.id}" class="px-2 py-1 rounded-lg border border-stone-200 bg-white text-xs flex-1 min-w-[110px]">${presetOptions}</select>
+        <input id="compost-weight-${bin.id}" type="number" placeholder="重量(g)" class="px-2 py-1 rounded-lg border border-stone-200 bg-white text-xs w-20" />
+        <button data-action="submit-compost" data-bin-id="${bin.id}" class="bg-gradient-to-r from-emerald-500 to-emerald-700 text-white px-3 py-1 text-xs rounded-lg font-medium shadow-md transition-all duration-300 hover:scale-105 active:scale-95"><i class="fa-solid fa-plus"></i></button>
+      </div>
+    </div>`;
+  }).join("");
+
+  document.getElementById("main-content").innerHTML = `
+    <div class="space-y-4 sm:space-y-6">
+      <div class="flex items-center justify-between flex-wrap gap-3">
+        <h1 class="font-serif-cjk text-xl sm:text-2xl font-bold text-stone-800">耗材與堆肥</h1>
+        <button data-action="open-add-material" class="bg-gradient-to-r from-emerald-500 to-emerald-700 text-white px-4 py-2 text-sm rounded-xl font-medium shadow-md transition-all duration-300 hover:scale-105 active:scale-95 flex items-center gap-1.5"><i class="fa-solid fa-plus"></i> 新增採購</button>
+      </div>
+
+      <div class="bg-white/80 backdrop-blur-md border border-white/40 shadow-xl rounded-2xl sm:rounded-3xl p-4 sm:p-6">
+        <div class="flex items-center justify-between mb-4 flex-wrap gap-2">
+          <h3 class="font-serif-cjk text-base sm:text-lg font-bold text-stone-800 flex items-center gap-2"><i class="fa-solid fa-box text-emerald-600"></i> 工具與耗材庫存</h3>
+          <span class="text-xs text-stone-500 bg-stone-100 rounded-full px-3 py-1">庫存總成本：<b class="text-stone-700">$${totalMaterialCost}</b></span>
+        </div>
+        <div class="grid sm:grid-cols-3 gap-3">
+          ${state.materials.map(m=>`<div class="bg-stone-50 rounded-2xl px-4 py-3">
+            <p class="text-sm font-medium text-stone-700">${esc(m.name)}</p>
+            <p class="text-xs text-stone-400 mb-1">庫存 ${m.stock} ${esc(m.unit)} · 單價 $${m.unitCost||0}/${esc(m.unit)}</p>
+            <p class="text-xs text-emerald-600 font-medium mb-2">小計 $${m.stock*(m.unitCost||0)}</p>
+            <button data-action="use-material" data-id="${m.id}" class="bg-stone-200 text-stone-700 px-3 py-1.5 text-xs rounded-xl font-medium shadow-md transition-all duration-300 hover:scale-105 active:scale-95">使用 1 ${esc(m.unit)}</button>
+          </div>`).join("")}
+        </div>
+      </div>
+
+      <div class="grid md:grid-cols-2 gap-4 sm:gap-6">
+        <div class="bg-white/80 backdrop-blur-md border border-white/40 shadow-xl rounded-2xl sm:rounded-3xl p-4 sm:p-6">
+          <h3 class="font-serif-cjk text-base sm:text-lg font-bold text-stone-800 flex items-center gap-2 mb-3 sm:mb-4"><i class="fa-solid fa-scale-balanced text-emerald-600"></i> 碳氮比常數庫（可編輯）</h3>
+          <div class="space-y-2 mb-3 max-h-52 overflow-y-auto">${presetsHtml}</div>
+          <div class="flex flex-wrap gap-2">
+            <input id="new-preset-name" class="px-3 py-2 rounded-xl border border-stone-200 bg-white/70 text-sm flex-1 min-w-[120px]" placeholder="物料名稱" />
+            <input id="new-preset-ratio" type="number" class="px-3 py-2 rounded-xl border border-stone-200 bg-white/70 text-sm w-20 sm:w-24" placeholder="比值" />
+            <button data-action="submit-preset" class="bg-gradient-to-r from-emerald-500 to-emerald-700 text-white px-3 py-1.5 text-xs rounded-xl font-medium shadow-md transition-all duration-300 hover:scale-105 active:scale-95"><i class="fa-solid fa-plus"></i></button>
+          </div>
+        </div>
+        <div class="bg-white/80 backdrop-blur-md border border-white/40 shadow-xl rounded-2xl sm:rounded-3xl p-4 sm:p-6">
+          <div class="flex items-center justify-between mb-4 flex-wrap gap-2">
+            <h3 class="font-serif-cjk text-base sm:text-lg font-bold text-stone-800 flex items-center gap-2"><i class="fa-solid fa-recycle text-emerald-600"></i> 堆肥箱碳氮比加權估算</h3>
+            <button data-action="open-add-compost-bin" class="bg-stone-200 text-stone-700 px-3 py-1.5 text-xs rounded-xl font-medium shadow-md transition-all duration-300 hover:scale-105 active:scale-95 flex items-center gap-1.5"><i class="fa-solid fa-plus"></i> 新增堆肥箱</button>
+          </div>
+          <div class="space-y-4">${compostHtml}</div>
+        </div>
+      </div>
+    </div>`;
+}
+
+/* =========================================================================
+   銷售與收成
+========================================================================= */
+function renderSales(){
+  const salesHtml = state.sales.length===0 ? `<p class="text-sm text-stone-400">尚無銷售紀錄。</p>` :
+    state.sales.map(s=>`<div class="flex flex-wrap items-center justify-between gap-2 text-sm rounded-xl px-4 py-3 ${s.voided?'bg-stone-100 text-stone-400 line-through':'bg-stone-50 text-stone-700'}">
+      <span>${s.date} · ${esc(s.target)} · 買家：${esc(s.buyer||"未填")}</span>
+      <div class="flex flex-wrap items-center gap-2 sm:gap-3">
+        <span>售價 $${s.salePrice} － 成本 $${s.cost} = 淨利潤 <b>$${s.salePrice-s.cost}</b></span>
+        ${!s.voided?`<button data-action="void-sale" data-id="${s.id}" class="bg-white text-stone-600 border border-stone-200 px-3 py-1 text-xs rounded-xl font-medium transition-all duration-300 hover:scale-105 active:scale-95 shrink-0">標記作廢</button>`:""}
+      </div>
+    </div>`).join("");
+
+  const cropsHtml = state.crops.map(c=>{
+    const totalYield = c.harvests.reduce((s,h)=>s+h.amount,0);
+    const roi = c.initialCost ? (totalYield/c.initialCost).toFixed(2) : "－";
+    return `<div class="bg-stone-50 rounded-2xl p-4">
+      <p class="text-sm font-medium text-stone-700">${esc(c.name)}</p>
+      <p class="text-xs text-stone-400 mb-2">初始成本 $${c.initialCost} · 累積產量 ${totalYield}g · 效益比 ${roi} g/$</p>
+      <div class="flex gap-2">
+        <input id="harvest-input-${c.id}" type="number" placeholder="本次採收量(g)" class="px-3 py-1.5 rounded-xl border border-stone-200 bg-white text-sm flex-1" />
+        <button data-action="submit-harvest" data-id="${c.id}" class="bg-gradient-to-r from-emerald-500 to-emerald-700 text-white px-3 py-1.5 text-xs rounded-xl font-medium shadow-md transition-all duration-300 hover:scale-105 active:scale-95"><i class="fa-solid fa-plus"></i></button>
+      </div>
+    </div>`;
+  }).join("");
+
+  document.getElementById("main-content").innerHTML = `
+    <div class="space-y-4 sm:space-y-6">
+      <div class="flex items-center justify-between flex-wrap gap-3">
+        <h1 class="font-serif-cjk text-xl sm:text-2xl font-bold text-stone-800">銷售與收成</h1>
+        <button data-action="open-add-sale" class="bg-gradient-to-r from-emerald-500 to-emerald-700 text-white px-4 py-2 text-sm rounded-xl font-medium shadow-md transition-all duration-300 hover:scale-105 active:scale-95 flex items-center gap-1.5"><i class="fa-solid fa-plus"></i> 新增銷售紀錄</button>
+      </div>
+      <div class="bg-white/80 backdrop-blur-md border border-white/40 shadow-xl rounded-2xl sm:rounded-3xl p-4 sm:p-6">
+        <h3 class="font-serif-cjk text-base sm:text-lg font-bold text-stone-800 flex items-center gap-2 mb-3 sm:mb-4"><i class="fa-solid fa-dollar-sign text-emerald-600"></i> 銷售紀錄與淨利潤</h3>
+        <div class="space-y-2">${salesHtml}</div>
+      </div>
+      <div class="bg-white/80 backdrop-blur-md border border-white/40 shadow-xl rounded-2xl sm:rounded-3xl p-4 sm:p-6">
+        <div class="flex items-center justify-between mb-4 flex-wrap gap-2">
+          <h3 class="font-serif-cjk text-base sm:text-lg font-bold text-stone-800 flex items-center gap-2"><i class="fa-solid fa-leaf text-emerald-600"></i> 可食用作物產出投入比（ROI）</h3>
+          <button data-action="open-add-crop" class="bg-stone-200 text-stone-700 px-3 py-1.5 text-xs rounded-xl font-medium shadow-md transition-all duration-300 hover:scale-105 active:scale-95 flex items-center gap-1.5"><i class="fa-solid fa-plus"></i> 新增作物</button>
+        </div>
+        <div class="grid sm:grid-cols-2 gap-4">${cropsHtml}</div>
+      </div>
+    </div>`;
+}
+
+/* =========================================================================
+   AI 語音管理
+========================================================================= */
+function renderVoice(){
+  const v = state.voice;
+  let parsedHtml = "";
+  if(v.parsed && !v.parsed.ambiguous){
+    const p = v.parsed;
+    parsedHtml = `<div class="bg-stone-50 rounded-2xl p-4 text-sm space-y-1 mt-3">
+      <p class="text-stone-500">解析結果（尚未寫入資料庫，請確認）</p>
+      <p>動作：<b>${p.action}</b> · 品項：<b>${esc(p.species||"未辨識")}</b> · 金額：<b>${p.amount??"未辨識"}</b></p>
+      ${p.target?`<p class="text-stone-400 text-xs">對應植物：${esc(p.target.name)}（${esc(p.target.location)}）</p>`:""}
+      <div class="flex justify-end gap-2 mt-2">
+        <button data-action="cancel-voice-parse" class="bg-white text-stone-600 border border-stone-200 px-3 py-1.5 text-xs rounded-xl font-medium transition-all duration-300 hover:scale-105 active:scale-95">取消</button>
+        <button data-action="confirm-voice" class="bg-gradient-to-r from-emerald-500 to-emerald-700 text-white px-3 py-1.5 text-xs rounded-xl font-medium shadow-md transition-all duration-300 hover:scale-105 active:scale-95"><i class="fa-solid fa-check"></i> 確認送出</button>
+      </div>
+    </div>`;
+  } else if(v.parsed && v.parsed.ambiguous){
+    parsedHtml = `<div class="bg-amber-50 border border-amber-200 rounded-2xl p-4 text-sm space-y-2 mt-3">
+      <p class="flex items-center gap-2 text-amber-700"><i class="fa-solid fa-circle-question"></i> 同場地有多株「${esc(v.parsed.species)}」，請問是哪一盆？</p>
+      <div class="flex flex-wrap gap-2">
+        ${v.parsed.candidates.map(c=>`<button data-action="resolve-ambiguity" data-id="${c.id}" class="px-3 py-1.5 rounded-full bg-white border border-amber-300 text-xs text-amber-700 transition-all duration-300 hover:scale-105 active:scale-95">${esc(c.location)}的那盆（${c.id}）</button>`).join("")}
+      </div>
+    </div>`;
+  }
+
+  let queryHtml = "";
+  if(v.queryResult){
+    queryHtml = v.queryResult.length ? `<div class="space-y-1">${v.queryResult.map(p=>`<div class="text-sm bg-stone-50 rounded-xl px-3 py-2 flex flex-wrap justify-between gap-x-2 gap-y-0.5"><span>${esc(p.name)}</span><span class="text-stone-400 text-xs">${esc(p.location)}</span></div>`).join("")}</div>`
+      : `<p class="text-sm text-stone-400">找不到符合的存活植物。</p>`;
+  }
+
+  document.getElementById("main-content").innerHTML = `
+    <div class="space-y-4 sm:space-y-6">
+      <h1 class="font-serif-cjk text-xl sm:text-2xl font-bold text-stone-800">AI 自然語言語音管理</h1>
+      <div class="bg-white/80 backdrop-blur-md border border-white/40 shadow-xl rounded-2xl sm:rounded-3xl p-4 sm:p-6">
+        <h3 class="font-serif-cjk text-base sm:text-lg font-bold text-stone-800 flex items-center gap-2 mb-3"><i class="fa-solid fa-microphone text-emerald-600"></i> 語意結構化拆解</h3>
+        ${state.apiOffline?`<p class="text-xs text-orange-600 flex items-center gap-1 mb-3"><i class="fa-solid fa-plug-circle-xmark"></i> 語音辨識 API 目前離線，請改用文字輸入模擬。</p>`:""}
+        <div class="flex gap-2 mb-3 flex-wrap">
+          <input id="voice-text" class="px-3 py-2 rounded-xl border border-stone-200 bg-white/70 text-sm flex-1 min-w-[140px]" placeholder="例如：買了兩盆百合花三百元 / 靠近窗台的那盆" value="${esc(v.text)}" />
+          <button data-action="voice-listen" ${state.apiOffline?'disabled':''} class="bg-gradient-to-r from-amber-400 to-amber-600 text-white px-4 py-2 text-sm rounded-xl font-medium shadow-md transition-all duration-300 hover:scale-105 active:scale-95 disabled:opacity-40 flex items-center gap-1.5"><i class="fa-solid fa-volume-high"></i> ${v.listening?"聆聽中...":"語音輸入"}</button>
+          <button data-action="voice-parse" class="bg-gradient-to-r from-emerald-500 to-emerald-700 text-white px-4 py-2 text-sm rounded-xl font-medium shadow-md transition-all duration-300 hover:scale-105 active:scale-95">拆解語意</button>
+        </div>
+        ${parsedHtml}
+      </div>
+      <div class="bg-white/80 backdrop-blur-md border border-white/40 shadow-xl rounded-2xl sm:rounded-3xl p-4 sm:p-6">
+        <h3 class="font-serif-cjk text-base sm:text-lg font-bold text-stone-800 flex items-center gap-2 mb-3"><i class="fa-solid fa-magnifying-glass text-emerald-600"></i> 自然語言查詢</h3>
+        <div class="flex gap-2 mb-3">
+          <input id="query-text" class="px-3 py-2 rounded-xl border border-stone-200 bg-white/70 text-sm flex-1" placeholder="例如：目前百合還剩幾株？" value="${esc(v.queryText)}" />
+          <button data-action="voice-query" class="bg-gradient-to-r from-emerald-500 to-emerald-700 text-white px-4 py-2 text-sm rounded-xl font-medium shadow-md transition-all duration-300 hover:scale-105 active:scale-95">查詢</button>
+        </div>
+        ${queryHtml}
+      </div>
+    </div>`;
+}
+
+/* =========================================================================
+   報表匯出
+========================================================================= */
+function renderReports(){
+  const salesTotal = state.sales.filter(x=>!x.voided).reduce((s,x)=>s+(Number(x.salePrice)||0),0);
+  const plantCost = state.plants.reduce((s,x)=>s+(Number(x.price)||0),0);
+  const compostCost = state.compostBins.reduce((s,x)=>
+    s + (Array.isArray(x.inputs) ? x.inputs.reduce((a,i)=>a+(Number(i.cost)||0),0) : 0),0);
+
+  // 耗材：優先從耗材資料的成本欄位統計；若目前資料沒有成本，則顯示 0
+  const consumableCost = (state.materials || []).reduce((s,x)=>
+    s + (Number(x.cost)||Number(x.price)||0),0);
+
+  // 盆器：從植物目前盆器/移動歷程中抓取可用價格欄位
+  const potCost = state.plants.reduce((s,x)=>{
+    const history = Array.isArray(x.moveHistory) ? x.moveHistory : [];
+    return s + history.reduce((a,h)=>a+(Number(h.cost)||Number(h.price)||0),0);
+  },0);
+
+  const otherCost = Math.max(0, (state.expenses || []).reduce((s,x)=>s+(Number(x.amount)||0),0));
+
+  const categories = [
+    {name:"植物購買", value:plantCost, icon:"fa-seedling"},
+    {name:"耗材", value:consumableCost, icon:"fa-toolbox"},
+    {name:"盆器", value:potCost, icon:"fa-box"},
+    {name:"堆肥", value:compostCost, icon:"fa-recycle"},
+    {name:"其他", value:otherCost, icon:"fa-ellipsis"}
+  ];
+
+  const totalCost = categories.reduce((s,x)=>s+x.value,0);
+  const chartColors = ["#059669","#0ea5e9","#f59e0b","#8b5cf6","#78716c"];
+
+  // SVG 圓餅圖：不依賴第三方圖表套件
+  let currentAngle = -90;
+  const slices = categories.map((c,i)=>{
+    const pct = totalCost ? c.value/totalCost : 0;
+    const startAngle = currentAngle;
+    const endAngle = currentAngle + pct*360;
+    currentAngle = endAngle;
+
+    const polar = (angle, radius) => {
+      const rad = angle*Math.PI/180;
+      return [100 + radius*Math.cos(rad), 100 + radius*Math.sin(rad)];
+    };
+
+    let path = "";
+    if(pct >= 0.9999){
+      path = `<circle cx="100" cy="100" r="78" fill="${chartColors[i]}"></circle>`;
+    } else if(pct > 0){
+      const [sx,sy] = polar(startAngle,78);
+      const [ex,ey] = polar(endAngle,78);
+      const large = endAngle-startAngle > 180 ? 1 : 0;
+      path = `<path d="M 100 100 L ${sx} ${sy} A 78 78 0 ${large} 1 ${ex} ${ey} Z" fill="${chartColors[i]}"></path>`;
+    }
+    return {...c,pct,path,color:chartColors[i]};
+  });
+
+  const chart = totalCost
+    ? slices.map(s=>s.path).join("")
+    : `<circle cx="100" cy="100" r="78" fill="#e7e5e4"></circle>`;
+
+  const legend = slices.map(s=>{
+    const percent = totalCost ? Math.round(s.pct*100) : 0;
+    return `
+      <button onclick="showExpenseCategory('${s.name}')"
+        class="w-full flex items-center justify-between gap-3 rounded-xl px-3 py-2.5 hover:bg-stone-50 transition text-left">
+        <span class="flex items-center gap-2 min-w-0">
+          <span class="w-3 h-3 rounded-full shrink-0" style="background:${s.color}"></span>
+          <i class="fa-solid ${s.icon} text-stone-400 w-4"></i>
+          <span class="text-xs text-stone-700 truncate">${s.name}</span>
+        </span>
+        <span class="text-right shrink-0">
+          <b class="text-xs text-stone-700">$${s.value.toLocaleString()}</b>
+          <span class="text-[10px] text-stone-400 ml-1">${percent}%</span>
+        </span>
+      </button>`;
+  }).join("");
+
+  const top = [...slices].sort((a,b)=>b.value-a.value)[0];
+  const insight = top && top.value > 0
+    ? `本期「${top.name}」支出最高，佔總花費 ${Math.round(top.pct*100)}%。`
+    : "目前尚無花費資料，新增植物、耗材、盆器或堆肥紀錄後會自動統計。";
+
+  document.getElementById("main-content").innerHTML = `
+    <div class="space-y-5">
+      <div>
+        <p class="text-[11px] text-emerald-700 font-medium">數據管理</p>
+        <h1 class="font-serif-cjk text-2xl sm:text-3xl font-bold text-stone-800 mt-1">報表與分析</h1>
+        <p class="text-sm text-stone-500 mt-1">快速掌握植物經營的花費與收入。</p>
+      </div>
+
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <div class="bg-white rounded-2xl border border-stone-100 p-4 shadow-sm">
+          <p class="text-xs text-stone-400">植物總數</p>
+          <p class="text-2xl font-bold text-stone-800 mt-1">${state.plants.length}</p>
+          <p class="text-[10px] text-stone-400 mt-1">目前紀錄</p>
+        </div>
+        <div class="bg-white rounded-2xl border border-stone-100 p-4 shadow-sm">
+          <p class="text-xs text-stone-400">總花費</p>
+          <p class="text-2xl font-bold text-emerald-700 mt-1">$${totalCost.toLocaleString()}</p>
+          <p class="text-[10px] text-stone-400 mt-1">目前紀錄</p>
+        </div>
+        <div class="bg-white rounded-2xl border border-stone-100 p-4 shadow-sm">
+          <p class="text-xs text-stone-400">銷售收入</p>
+          <p class="text-2xl font-bold text-amber-600 mt-1">$${salesTotal.toLocaleString()}</p>
+          <p class="text-[10px] text-stone-400 mt-1">目前紀錄</p>
+        </div>
+        <div class="bg-white rounded-2xl border border-stone-100 p-4 shadow-sm">
+          <p class="text-xs text-stone-400">淨額</p>
+          <p class="text-2xl font-bold ${salesTotal-totalCost>=0?'text-emerald-700':'text-red-600'} mt-1">$${(salesTotal-totalCost).toLocaleString()}</p>
+          <p class="text-[10px] text-stone-400 mt-1">收入 − 花費</p>
+        </div>
+      </div>
+
+      <section class="bg-[#fffdf8] rounded-[1.8rem] border border-white shadow-sm p-4 sm:p-6">
+        <div class="flex items-start justify-between gap-3 flex-wrap">
+          <div>
+            <h2 class="font-serif-cjk text-lg font-bold text-stone-800 flex items-center gap-2">
+              <span class="w-9 h-9 rounded-xl bg-emerald-100 text-emerald-700 grid place-items-center">
+                <i class="fa-solid fa-chart-pie"></i>
+              </span>
+              花費結構
+            </h2>
+            <p class="text-xs text-stone-400 mt-1">點擊分類可以查看該類別的花費內容。</p>
+          </div>
+          <span class="text-xs px-3 py-1.5 rounded-full bg-emerald-50 text-emerald-700">
+            總花費 $${totalCost.toLocaleString()}
+          </span>
+        </div>
+
+        <div class="grid lg:grid-cols-[1fr_1fr] gap-6 items-center mt-5">
+          <div class="relative mx-auto w-64 h-64">
+            <svg viewBox="0 0 200 200" class="w-full h-full -rotate-0">
+              ${chart}
+              <circle cx="100" cy="100" r="46" fill="#fffdf8"></circle>
+            </svg>
+            <div class="absolute inset-0 grid place-items-center pointer-events-none">
+              <div class="text-center">
+                <p class="text-[10px] text-stone-400">總花費</p>
+                <p class="text-2xl font-bold text-stone-800">$${totalCost.toLocaleString()}</p>
+                <p class="text-[10px] text-stone-400">目前紀錄</p>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <div class="divide-y divide-stone-100">
+              ${legend}
+            </div>
+            <div class="mt-4 rounded-2xl bg-emerald-50/70 border border-emerald-100 p-3.5">
+              <p class="text-xs text-emerald-800">
+                <i class="fa-solid fa-lightbulb mr-1"></i>${insight}
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="expense-category-detail" class="bg-white rounded-[1.8rem] border border-stone-100 shadow-sm p-4 sm:p-6">
+        <div class="flex items-center justify-between gap-3">
+          <div>
+            <h2 class="font-serif-cjk text-lg font-bold text-stone-800">📋 花費明細</h2>
+            <p class="text-xs text-stone-400 mt-1">選擇上方分類後，這裡會顯示對應的紀錄。</p>
+          </div>
+          <span class="text-[10px] text-stone-400">可點擊圓餅圖分類</span>
+        </div>
+        <div class="mt-4 rounded-2xl bg-stone-50 p-6 text-center text-xs text-stone-400">
+          點擊「植物購買、耗材、盆器、堆肥或其他」查看明細
+        </div>
+      </section>
+    </div>`;
+}
+
+function showExpenseCategory(category){
+  const box = document.getElementById("expense-category-detail");
+  if(!box) return;
+
+  let rows = [];
+
+  if(category==="植物購買"){
+    rows = state.plants.map(p=>({
+      title:p.name,
+      sub:`${p.species} · ${p.acquireDate || "－"}`,
+      amount:Number(p.price)||0,
+      icon:"fa-seedling"
+    })).filter(x=>x.amount>0);
+  }else if(category==="堆肥"){
+    state.compostBins.forEach(bin=>{
+      (bin.inputs||[]).forEach(i=>{
+        const amount=Number(i.cost)||0;
+        if(amount>0) rows.push({title:i.material||"堆肥材料",sub:`${bin.name||"堆肥箱"} · ${i.date||"－"}`,amount,icon:"fa-recycle"});
+      });
+    });
+  }else if(category==="耗材"){
+    rows=(state.materials||[]).map(m=>({
+      title:m.name||m.material||"耗材",
+      sub:m.date||m.type||"耗材紀錄",
+      amount:Number(m.cost)||Number(m.price)||0,
+      icon:"fa-toolbox"
+    })).filter(x=>x.amount>0);
+  }else if(category==="盆器"){
+    state.plants.forEach(p=>{
+      (p.moveHistory||[]).forEach(h=>{
+        const amount=Number(h.cost)||Number(h.price)||0;
+        if(amount>0) rows.push({title:`${p.name} · ${h.potSize||"－"}吋盆`,sub:h.date||"盆器紀錄",amount,icon:"fa-box"});
+      });
+    });
+  }else if(category==="其他"){
+    rows=(state.expenses||[]).map(e=>({
+      title:e.name||e.title||"其他支出",
+      sub:e.date||"其他紀錄",
+      amount:Number(e.amount)||0,
+      icon:"fa-ellipsis"
+    })).filter(x=>x.amount>0);
+  }
+
+  const total=rows.reduce((s,x)=>s+x.amount,0);
+  box.innerHTML=`
+    <div class="flex items-center justify-between gap-3">
+      <div>
+        <h2 class="font-serif-cjk text-lg font-bold text-stone-800">📋 ${category}明細</h2>
+        <p class="text-xs text-stone-400 mt-1">共 ${rows.length} 筆 · 合計 $${total.toLocaleString()}</p>
+      </div>
+      <button onclick="renderReports()" class="text-xs text-stone-400 hover:text-emerald-700">清除篩選</button>
+    </div>
+    <div class="mt-4">
+      ${rows.length ? rows.map(r=>`
+        <div class="flex items-center justify-between gap-3 py-3 border-b border-stone-100 last:border-0">
+          <div class="flex items-center gap-3 min-w-0">
+            <span class="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-700 grid place-items-center shrink-0">
+              <i class="fa-solid ${r.icon}"></i>
+            </span>
+            <div class="min-w-0">
+              <p class="text-sm text-stone-700 truncate">${esc(r.title)}</p>
+              <p class="text-[10px] text-stone-400 truncate">${esc(String(r.sub))}</p>
+            </div>
+          </div>
+          <b class="text-sm text-stone-700 shrink-0">$${r.amount.toLocaleString()}</b>
+        </div>`).join("")
+      : `<div class="rounded-2xl bg-stone-50 p-6 text-center text-xs text-stone-400">目前沒有可顯示的${category}花費紀錄。</div>`}
+    </div>`;
+}
+
+function renderMain(){
+  if(state.tab==="dashboard") renderDashboard();
+  else if(state.tab==="plants") renderPlants();
+  else if(state.tab==="genealogy") renderGenealogy();
+  else if(state.tab==="market") renderMarket();
+  else if(state.tab==="materials") renderMaterials();
+  else if(state.tab==="sales") renderSales();
+  else if(state.tab==="voice") renderVoice();
+  else if(state.tab==="reports") renderReports();
+}
+function render(){ renderSidebar(); renderMain(); saveState(); }
+
+/* =========================================================================
+   小型 UI 輔助（modal 內部欄位切換）
+========================================================================= */
+function toggleStaghornField(){
+  const isStaghorn = document.getElementById("ap-staghorn").value === "y";
+  const wrap = document.getElementById("ap-species-wrap");
+  if(isStaghorn){
+    wrap.innerHTML = `<label class="block"><span class="text-xs font-medium text-stone-500 mb-1 block">原生種品種（18 種）</span>
+      <select id="ap-species" class="w-full px-3 py-2 rounded-xl border border-stone-200 bg-white/70 text-sm text-stone-700 focus:outline-none focus:ring-2 focus:ring-emerald-400">
+        <option value="">請選擇</option>${NATIVE_STAGHORN_SPECIES.map(s=>`<option value="${s}">${s}</option>`).join("")}
+      </select></label>`;
+  } else {
+    wrap.innerHTML = `<label class="block"><span class="text-xs font-medium text-stone-500 mb-1 block">品種</span>
+      <input id="ap-species" class="w-full px-3 py-2 rounded-xl border border-stone-200 bg-white/70 text-sm text-stone-700 focus:outline-none focus:ring-2 focus:ring-emerald-400" placeholder="例如：龜背芋" /></label>`;
+  }
+}
+function toggleSplitField(){
+  const reason = document.getElementById("mv-reason").value;
+  document.getElementById("mv-split-wrap").classList.toggle("hidden", reason!=="分株");
+}
+// 這裡新增族譜邏輯：依繁殖方式切換「新增植物」表單中的血緣欄位（parentId 或 motherId+fatherId）
+function toggleLineageFields(){
+  const method = document.getElementById("ap-propagation").value;
+  const wrap = document.getElementById("ap-lineage-wrap");
+  const inputCls = "w-full px-3 py-2 rounded-xl border border-stone-200 bg-white/70 text-sm text-stone-700 focus:outline-none focus:ring-2 focus:ring-emerald-400 transition-all duration-300";
+  const plantOptions = `<option value="">（無）</option>` + state.plants.map(p=>`<option value="${p.id}">${esc(p.id)} · ${esc(p.name)}</option>`).join('');
+  if(method === "交配種"){
+    wrap.classList.remove("hidden");
+    wrap.innerHTML = `
+      <label class="block"><span class="text-xs font-medium text-stone-500 mb-1 block">母株（Mother）</span>
+        <select id="ap-mother" class="${inputCls}">${plantOptions}</select></label>
+      <label class="block"><span class="text-xs font-medium text-stone-500 mb-1 block">父株（Father）</span>
+        <select id="ap-father" class="${inputCls}">${plantOptions}</select></label>`;
+  } else if(method === "分株" || method === "側芽"){
+    wrap.classList.remove("hidden");
+    wrap.innerHTML = `
+      <label class="block sm:col-span-2"><span class="text-xs font-medium text-stone-500 mb-1 block">來源母株（無性繁殖）</span>
+        <select id="ap-parent" class="${inputCls}">${plantOptions}</select></label>`;
+  } else {
+    wrap.classList.add("hidden");
+    wrap.innerHTML = "";
+  }
+}
+
+/* =========================================================================
+   RWD：手機版側邊欄開關（off-canvas drawer）
+========================================================================= */
+function openMobileNav(){
+  document.getElementById("sidebar").classList.add("sidebar-open");
+  document.getElementById("mobile-nav-backdrop").classList.remove("hidden");
+}
+function closeMobileNav(){
+  document.getElementById("sidebar").classList.remove("sidebar-open");
+  document.getElementById("mobile-nav-backdrop").classList.add("hidden");
+}
+document.getElementById("mobile-nav-toggle").addEventListener("click", openMobileNav);
+document.getElementById("mobile-nav-close").addEventListener("click", closeMobileNav);
+document.getElementById("mobile-nav-backdrop").addEventListener("click", closeMobileNav);
+window.addEventListener("resize", function(){
+  if(window.innerWidth >= 768) closeMobileNav();
+});
+
+/* =========================================================================
+   事件代理（點擊）
+========================================================================= */
+document.addEventListener("click", function(e){
+  const el = e.target.closest("[data-action]");
+  if(!el) return;
+  const action = el.dataset.action;
+
+  if(action==="switch-tab"){ state.tab = el.dataset.tab; render(); closeMobileNav(); }
+  else if(action==="close-modal"){ closeModal(); }
+  else if(action==="select-plant"){ state.selectedPlantId = state.selectedPlantId===el.dataset.id ? null : el.dataset.id; renderPlants(); }
+  else if(action==="select-plant-from-map"){ state.selectedPlantId = el.dataset.id; state.tab="plants"; render(); closeMobileNav(); }
+  else if(action==="open-add-plant"){ openModal("addPlant", {}); }
+  else if(action==="submit-add-plant"){
+    const name = document.getElementById("ap-name").value.trim();
+    if(!name) return;
+    if(pendingAddPlantPhotoProcessing){
+      showToast("照片還在處理中，請稍候", "fa-image");
+      return;
+    }
+    // 這裡新增族譜邏輯：讀取繁殖方式與血緣欄位一併寫入
+    addPlant({
+      name,
+      species: document.getElementById("ap-species").value,
+      isStaghorn: document.getElementById("ap-staghorn").value==="y",
+      source: document.getElementById("ap-source").value,
+      price: document.getElementById("ap-price").value,
+      acquireDate: document.getElementById("ap-date").value,
+      location: document.getElementById("ap-location").value,
+      potSize: document.getElementById("ap-pot").value,
+      photos: pendingAddPlantPhoto ? [{id:uid("ph"), url:pendingAddPlantPhoto, date:todayStr(), eventType:"建檔"}] : [],
+      propagationMethod: document.getElementById("ap-propagation").value,
+      parentId: document.getElementById("ap-parent")?.value || null,
+      motherId: document.getElementById("ap-mother")?.value || null,
+      fatherId: document.getElementById("ap-father")?.value || null
+    });
+    pendingAddPlantPhoto = null;
+  }
+  else if(action==="open-move"){ openModal("move", { plantId: el.dataset.id }); }
+  else if(action==="submit-move"){
+    const plantId = el.dataset.plantId;
+    movePlantSubmit(plantId,
+      document.getElementById("mv-location").value,
+      document.getElementById("mv-pot").value,
+      document.getElementById("mv-date").value,
+      document.getElementById("mv-reason").value,
+      Number(document.getElementById("mv-split")?.value || 0));
+  }
+  else if(action==="open-death"){ markDeadStart(el.dataset.id); }
+  else if(action==="submit-death"){
+    markDeadConfirm(el.dataset.plantId, document.getElementById("dd-date").value, document.getElementById("dd-cause").value.trim());
+  }
+  else if(action==="open-sold"){ markSoldStart(el.dataset.id); }
+  else if(action==="submit-sold"){
+    markSoldConfirm(el.dataset.plantId, document.getElementById("sd-date").value, document.getElementById("sd-to").value.trim());
+  }
+  else if(action==="submit-market"){
+    const input = document.getElementById("new-market-name");
+    addMarket(input.value.trim());
+    input.value = "";
+  }
+  else if(action==="submit-market-purchase"){
+    const name = document.getElementById("mp-name").value.trim();
+    if(!name){
+      showToast("請先填寫植物名稱", "fa-circle-exclamation");
+      document.getElementById("mp-name").focus();
+      return;
+    }
+    addMarketPurchase({
+      name,
+      species: document.getElementById("mp-species").value.trim(),
+      source: document.getElementById("mp-source").value,
+      price: document.getElementById("mp-price").value,
+      acquireDate: document.getElementById("mp-date").value,
+      location: document.getElementById("mp-location").value,
+      potSize: document.getElementById("mp-pot").value,
+      isStaghorn: document.getElementById("mp-staghorn").checked
+    });
+  }
+  else if(action==="open-add-material"){ openModal("addMaterial", {}); }
+  else if(action==="submit-material"){
+    const name = document.getElementById("mat-name").value.trim();
+    if(!name) return;
+    purchaseMaterialSubmit(name, document.getElementById("mat-qty").value, document.getElementById("mat-unit").value, document.getElementById("mat-cost").value, false);
+  }
+  else if(action==="submit-force-material"){
+    purchaseMaterialSubmit(el.dataset.name, el.dataset.qty, el.dataset.unit, el.dataset.cost, true);
+  }
+  else if(action==="use-material"){ useMaterial(el.dataset.id); }
+  else if(action==="submit-preset"){
+    const name = document.getElementById("new-preset-name").value.trim();
+    const ratio = document.getElementById("new-preset-ratio").value;
+    if(name && ratio) addCnPreset(name, ratio);
+  }
+  else if(action==="remove-preset"){ removeCnPreset(el.dataset.id); }
+  else if(action==="submit-compost"){
+    const binId = el.dataset.binId;
+    const material = document.getElementById(`compost-material-${binId}`).value;
+    const weight = document.getElementById(`compost-weight-${binId}`).value;
+    if(weight) addCompostInput(binId, material, weight);
+  }
+  else if(action==="open-add-compost-bin"){ openModal("addCompostBin", {}); }
+  else if(action==="submit-compost-bin"){
+    const name = document.getElementById("cb-name").value.trim();
+    if(!name) return;
+    addCompostBin(name, document.getElementById("cb-type").value, document.getElementById("cb-target").value);
+  }
+  else if(action==="open-add-sale"){ openModal("addSale", {}); }
+  else if(action==="submit-sale"){
+    const price = document.getElementById("sl-price").value;
+    const cost = document.getElementById("sl-cost").value;
+    if(price==="" || cost==="") return;
+    addSaleSubmit(document.getElementById("sl-target").value, price, cost, document.getElementById("sl-buyer").value);
+  }
+  else if(action==="void-sale"){ voidSale(el.dataset.id); }
+  else if(action==="open-add-crop"){ openModal("addCrop", {}); }
+  else if(action==="submit-crop"){
+    const name = document.getElementById("crop-name").value.trim();
+    if(!name) return;
+    addCrop(name, document.getElementById("crop-cost").value);
+  }
+  else if(action==="submit-harvest"){
+    const id = el.dataset.id;
+    const val = document.getElementById(`harvest-input-${id}`).value;
+    if(val) addHarvest(id, val);
+  }
+  else if(action==="open-family-detail"){ openModal("familyDetail", { plantId: el.dataset.id }); }
+  else if(action==="goto-plant-detail"){
+    // 這裡新增族譜邏輯：從家族詳情面板跳轉到「植物總表」查看完整資料
+    state.selectedPlantId = el.dataset.plantId;
+    state.tab = "plants";
+    closeModal();
+    render();
+    closeMobileNav();
+  }
+  else if(action==="voice-listen"){
+    if(state.apiOffline) return;
+    state.voice.listening = true; renderVoice();
+    setTimeout(()=>{
+      state.voice.listening = false;
+      const box = document.getElementById("voice-text");
+      if(box && !box.value){ state.voice.text = "買了兩盆" + (state.plants[0]?.species||"植物") + "三百元"; }
+      renderVoice();
+    }, 1400);
+  }
+  else if(action==="voice-parse"){
+    const text = document.getElementById("voice-text").value;
+    state.voice.text = text;
+    if(!text) return;
+    state.voice.parsed = parseVoiceCommand(text);
+    renderVoice();
+  }
+  else if(action==="cancel-voice-parse"){ state.voice.parsed = null; renderVoice(); }
+  else if(action==="confirm-voice"){ confirmVoiceEntry(); }
+  else if(action==="resolve-ambiguity"){
+    const target = state.plants.find(p=>p.id===el.dataset.id);
+    state.voice.parsed = { ...state.voice.parsed, ambiguous:false, target };
+    renderVoice();
+  }
+  else if(action==="voice-query"){
+    const q = document.getElementById("query-text").value;
+    state.voice.queryText = q;
+    const knownNames = [...new Set(state.plants.map(p=>p.species))];
+    const matched = knownNames.find(n=>q.includes(n));
+    state.voice.queryResult = matched ? state.plants.filter(p=>p.species===matched && p.status==="存活") : [];
+    renderVoice();
+  }
+  else if(action==="export-csv"){ exportCSV(); }
+  else if(action==="preview-pdf"){
+    const r = document.getElementById("pdf-result");
+    r.classList.remove("hidden"); r.classList.add("flex");
+  }
+  else if(action==="api-toggle" || el.id==="api-toggle"){ /* handled below */ }
+});
+
+document.getElementById("api-toggle").addEventListener("click", function(){
+  state.apiOffline = !state.apiOffline;
+  render();
+});
+
+/* =========================================================================
+   初始化
+========================================================================= */
+render();
+</script>
+
+<script>
+/* 若原始 renderPage 尚未接上此頁，可在 genealogy 分支使用：
+   document.getElementById('app').innerHTML = renderBreedingGenealogyPage();
+*/
+</script>
+
+<script>
+(function(){
+  const _oldRenderPage = window.renderPage;
+  if(typeof _oldRenderPage === 'function'){
+    window.renderPage = function(page){
+      if(page === 'genealogy'){
+        const app=document.getElementById('app');
+        if(app){ app.innerHTML=renderBreedingGenealogyV2(); BGV2_select(BGV2_SELECTED); return; }
+      }
+      return _oldRenderPage.apply(this, arguments);
+    };
+  }
+})();
+</script>
+
+</body>
+</html>pt>
 <style>
   html { -webkit-text-size-adjust: 100%; }
   body { font-family: ui-sans-serif, system-ui, "Noto Sans TC", sans-serif; overflow-x: hidden; -webkit-tap-highlight-color: transparent; }
