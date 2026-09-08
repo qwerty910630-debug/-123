@@ -795,6 +795,8 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 }
 .compost-fields label{font-size:10px!important;color:#7d8b82!important;font-weight:700!important;}
 .compost-fields input,.compost-fields select{display:block!important;width:100%!important;margin-top:5px!important;padding:8px 9px!important;font-size:11px!important;}
+.compost-field-full{grid-column:1/-1!important;}
+.compost-effectiveness-textarea{display:block!important;width:100%!important;margin-top:5px!important;padding:8px 9px!important;font-size:11px!important;min-height:56px!important;resize:vertical!important;white-space:pre-wrap!important;line-height:1.5!important;font-family:inherit!important;}
 .compost-photo-upload{
   display:flex!important;align-items:center!important;justify-content:space-between!important;gap:10px!important;
   margin-top:12px!important;padding:11px 13px!important;border:1px dashed #cbdacb!important;
@@ -1440,103 +1442,22 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
   .material-stats-v3{grid-template-columns:1fr!important;}
 }
 </style>
+<style id="unified-resource-ui-css">
+/* ===== 工具＋耗材合併檢視：單一清單顯示 ===== */
+.summary-dot.used{background:#c98f2e!important;box-shadow:0 0 0 4px #fbeed9!important;}
+.tool-card-v3-bottom-end{justify-content:flex-end!important;}
+.unified-grid-v3{
+  display:grid!important;grid-template-columns:repeat(auto-fill,minmax(270px,1fr))!important;
+  gap:14px!important;align-items:start!important;padding:4px 24px 24px!important;
+}
+@media(max-width:760px){
+  .unified-grid-v3{grid-template-columns:1fr!important;padding:4px 16px 18px!important;}
+}
+</style>
 <style id="resource-source-manager-css">
 .resource-secondary{display:inline-flex!important;align-items:center!important;gap:6px!important;border:1px solid #d9e6dc!important;background:#fff!important;color:#35624d!important;padding:9px 13px!important;border-radius:12px!important;font-size:11px!important;font-weight:800!important}
 .resource-secondary:hover{background:#f1f8f2!important;border-color:#bcd5c1!important}
 .card-source-line{font-size:11px!important;color:#64756b!important;margin-top:5px!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important}
-</style>
-
-<style id="final-rwd-overrides">
-/* ===== 最終 RWD：手機／平板／桌機自適應，不改動資料與功能 ===== */
-* { box-sizing: border-box; }
-html, body { width:100%; min-width:0; }
-body { overflow-x:hidden; }
-
-/* 長內容元件在窄螢幕以自身滾動，避免整頁被撐寬 */
-.genealogy-tree, .bgv2-family, .resource-table-wrap, .compost-preset-list,
-.table-responsive, [class*="overflow-x-auto"] { max-width:100%; }
-
-/* 圖片、表格、Canvas 不突破父層 */
-#main-content img, #main-content canvas, #main-content svg,
-#modal-root img, #modal-root canvas, #modal-root svg { max-width:100%; height:auto; }
-#main-content table, #modal-root table { max-width:100%; }
-
-/* 避免很長的網址／植物學名／備註把卡片撐爆 */
-#main-content, #modal-root { overflow-wrap:anywhere; word-break:break-word; }
-
-/* Modal 在手機保留邊距 */
-#modal-root > div { max-width:100vw; }
-
-@media (max-width: 767px) {
-  main { width:100%; min-width:0; max-width:none !important; padding:1rem !important; margin:0 !important; }
-  #main-content { width:100%; min-width:0; }
-
-  /* 頂部手機列固定高度，內容區不被遮住 */
-  header.md\:hidden { min-height:64px; }
-
-  /* 常見卡片與區塊縮小內距 */
-  #main-content .p-8 { padding:1rem !important; }
-  #main-content .p-7 { padding:1rem !important; }
-  #main-content .p-6 { padding:1rem !important; }
-  #main-content .px-8 { padding-left:1rem !important; padding-right:1rem !important; }
-  #main-content .py-8 { padding-top:1rem !important; padding-bottom:1rem !important; }
-
-  /* Tailwind 常見雙欄／三欄在手機改單欄；保留明確的 2 欄小統計區 */
-  #main-content .grid.grid-cols-3,
-  #main-content .grid.grid-cols-4,
-  #main-content .grid.md\:grid-cols-2,
-  #main-content .grid.lg\:grid-cols-3,
-  #main-content .grid.lg\:grid-cols-4 {
-    grid-template-columns:1fr !important;
-  }
-
-  /* 表單欄位與工具列 */
-  #main-content form, #modal-root form { max-width:100%; }
-  #main-content input, #main-content select, #main-content textarea,
-  #modal-root input, #modal-root select, #modal-root textarea {
-    width:100%; min-width:0; max-width:100%; font-size:16px;
-  }
-  #main-content button, #modal-root button { max-width:100%; }
-
-  /* 需要橫向閱讀的表格，改由外層滾動而不是撐破頁面 */
-  #main-content table { min-width:0; }
-
-  /* 族譜本身允許水平捲動，避免節點被壓扁 */
-  .genealogy-tree, .bgv2-family { overflow-x:auto; -webkit-overflow-scrolling:touch; }
-  .g-tree { min-width:760px; }
-  .bgv2-tree { min-width:650px; }
-
-  /* 手機 Modal 寬度 */
-  #modal-root .max-w-2xl, #modal-root .max-w-3xl,
-  #modal-root .max-w-4xl, #modal-root .max-w-5xl {
-    width:calc(100vw - 2rem) !important; max-width:calc(100vw - 2rem) !important;
-    margin-left:auto; margin-right:auto;
-  }
-
-  /* 按鈕列可換行，避免水平溢出 */
-  #main-content .flex, #modal-root .flex { min-width:0; }
-  #main-content .flex-wrap, #modal-root .flex-wrap { row-gap:8px; }
-
-  /* 標題在小螢幕不要過大 */
-  #main-content h1 { font-size:clamp(1.45rem,6vw,2rem) !important; line-height:1.25 !important; }
-  #main-content h2 { font-size:clamp(1.15rem,5vw,1.5rem) !important; line-height:1.3 !important; }
-
-  /* 資源頁等自訂固定寬度元件 */
-  .compost-page-shell, .resource-overview-card, .tool-panel-v3,
-  .material-panel-v3, .compost-hero { max-width:100% !important; }
-}
-
-@media (min-width:768px) and (max-width:1023px) {
-  main { min-width:0; padding-left:1.25rem !important; padding-right:1.25rem !important; }
-  #main-content { min-width:0; }
-}
-
-@media (max-width:480px) {
-  header.md\:hidden { padding-left:12px !important; padding-right:12px !important; }
-  main { padding-left:.75rem !important; padding-right:.75rem !important; }
-  #main-content .rounded-3xl { border-radius:1rem !important; }
-  #main-content .rounded-2xl { border-radius:.9rem !important; }
-}
 </style>
 </head>
 <body class="bg-gradient-to-br from-emerald-50 via-white to-stone-50 min-h-screen">
@@ -1792,20 +1713,7 @@ let state = {
     { id:"mt5", name:"龍蝦殼實驗盆", stock:2, unit:"盆", unitCost:0, purchaseTotalCost:0, usedQty:0, usedCost:0, usageHistory:[], batches:[], source:"", note:"用途：實驗；狀態：分解中；備註：其中一盆已改種地瓜葉" },
     { id:"mt6", name:"帝王蟹殼", stock:0, unit:"份", unitCost:0, purchaseTotalCost:0, usedQty:0, usedCost:0, usageHistory:[], batches:[], source:"", note:"用途：九層塔盆底；狀態：已驗證、已用；備註：效果顯著優於對照" },
     { id:"mt7", name:"龍眼木", stock:4, unit:"塊", unitCost:0, purchaseTotalCost:0, usedQty:0, usedCost:0, usageHistory:[], batches:[], source:"埔里甕仔雞店", note:"用途：板材/堆肥碳源" },
-    { id:"mt8", name:"樹皮", stock:1, unit:"片", unitCost:0, purchaseTotalCost:0, usedQty:0, usedCost:0, usageHistory:[], batches:[], source:"埔里甕仔雞店", note:"用途：板材/墊材" },
-    { id:"mt9", name:"碳化花盆", stock:20, unit:"個", unitCost:62.2, purchaseTotalCost:1244, usedQty:0, usedCost:0, usageHistory:[], batches:[], source:"拼多多", note:"用途：換盆、定植" },
-    { id:"mt10", name:"培養土", stock:10, unit:"kg", unitCost:8, purchaseTotalCost:80, usedQty:0, usedCost:0, usageHistory:[], batches:[], source:"丁（八角花市）", note:"用途：介質調配" },
-    { id:"mt11", name:"滴水器", stock:30, unit:"個", unitCost:3.3, purchaseTotalCost:99, usedQty:0, usedCost:0, usageHistory:[], batches:[], source:"拼多多", note:"用途：自動澆水" },
-    { id:"mt12", name:"水管＋噴頭", stock:1, unit:"組", unitCost:180, purchaseTotalCost:180, usedQty:0, usedCost:0, usageHistory:[], batches:[], source:"拼多多", note:"用途：澆水" },
-    { id:"mt13", name:"香料密封罐", stock:6, unit:"個", unitCost:16.17, purchaseTotalCost:97, usedQty:0, usedCost:0, usageHistory:[], batches:[], source:"拼多多", note:"用途：乾燥香草保存" },
-    { id:"mt14", name:"電熱烙鐵", stock:1, unit:"支", unitCost:26, purchaseTotalCost:26, usedQty:0, usedCost:0, usageHistory:[], batches:[], source:"拼多多", note:"用途：花盆鑽孔" },
-    { id:"mt15", name:"不鏽鋼水瓢", stock:1, unit:"支", unitCost:35, purchaseTotalCost:35, usedQty:0, usedCost:0, usageHistory:[], batches:[], source:"拼多多", note:"用途：澆水/取土" },
-    { id:"mt16", name:"花架", stock:1, unit:"個", unitCost:225, purchaseTotalCost:225, usedQty:0, usedCost:0, usageHistory:[], batches:[], source:"拼多多", note:"用途：擺放植物" },
-    { id:"mt17", name:"小板凳", stock:2, unit:"張", unitCost:32.5, purchaseTotalCost:65, usedQty:0, usedCost:0, usageHistory:[], batches:[], source:"拼多多", note:"用途：工作用" },
-    { id:"mt18", name:"S勾", stock:24, unit:"個", unitCost:1.17, purchaseTotalCost:28, usedQty:0, usedCost:0, usageHistory:[], batches:[], source:"拼多多", note:"用途：掛工具/吊盆" },
-    { id:"mt19", name:"水桶", stock:1, unit:"個", unitCost:22, purchaseTotalCost:22, usedQty:0, usedCost:0, usageHistory:[], batches:[], source:"拼多多", note:"用途：浸盆/儲水" },
-    { id:"mt20", name:"水苔", stock:150, unit:"g", unitCost:1.067, purchaseTotalCost:160, usedQty:0, usedCost:0, usageHistory:[], batches:[], source:"丁（旋轉花市）", note:"用途：鹿角蕨上板" },
-    { id:"mt21", name:"水苔＋椰塊", stock:1, unit:"份", unitCost:50, purchaseTotalCost:50, usedQty:0, usedCost:0, usageHistory:[], batches:[], source:"西屯周柏宏", note:"用途：加購；數量：少量" }
+    { id:"mt8", name:"樹皮", stock:1, unit:"片", unitCost:0, purchaseTotalCost:0, usedQty:0, usedCost:0, usageHistory:[], batches:[], source:"埔里甕仔雞店", note:"用途：板材/墊材" }
   ],
   cnPresets: CN_RATIO_DEFAULTS.map(x=>({...x})),
   compostBins: [
@@ -1894,6 +1802,13 @@ function loadState(){
   }
 }
 loadState();
+
+/* 工具的「累計投入成本」：只在建立/編輯時設定，使用 1 只扣庫存數量，不會讓這個值跟著變少。 */
+state.tools = Array.isArray(state.tools) ? state.tools : [];
+state.tools.forEach(t=>{
+  const total = Number(t.purchasedTotal);
+  if(!Number.isFinite(total)) t.purchasedTotal = (Number(t.qty)||0) * (Number(t.unitCost)||0);
+});
 
 /* 使用者提供的堆肥與資產系統資源：首次同步時寫入，之後以 localStorage 保存使用者後續調整。 */
 (function syncUserResourceInventory(){
@@ -2440,6 +2355,13 @@ function addCrop(name, initialCost){
 /* =========================================================================
    AI 語音
 ========================================================================= */
+function findVoiceResourceMatch(text){
+  const tool = state.tools.find(t=>t.name && text.includes(t.name));
+  if(tool) return { kind:"tool", item:tool };
+  const material = state.materials.find(m=>m.name && text.includes(m.name));
+  if(material) return { kind:"material", item:material };
+  return null;
+}
 function parseVoiceCommand(text){
   const amountMatch = text.match(/(\d+)\s*元/);
   const amount = amountMatch ? Number(amountMatch[1]) : null;
@@ -2456,15 +2378,54 @@ function parseVoiceCommand(text){
     const hints = { "窗台":"窗邊", "門口":"門口", "角落":"角落" };
     const hintKey = Object.keys(hints).find(h=>text.includes(h));
     if(candidates.length>1 && !hintKey){
-      return { ambiguous:true, species:matchedSpecies, candidates, action, amount, rawText:text };
+      return { ambiguous:true, type:"plant", species:matchedSpecies, candidates, action, amount, rawText:text };
     }
     const target = hintKey ? (candidates.find(c=>c.location.includes(hints[hintKey])) || candidates[0]) : candidates[0];
-    return { ambiguous:false, species:matchedSpecies, target, action, amount, rawText:text };
+    return { ambiguous:false, type:"plant", species:matchedSpecies, target, action, amount, rawText:text };
   }
-  return { ambiguous:false, species:null, target:null, action, amount, rawText:text };
+
+  // 語音新增工具／耗材：句子裡出現「購入」＋金額＋現有工具或耗材名稱時，視為一筆新採購。
+  if(action==="購入" && amount){
+    const resourceMatch = findVoiceResourceMatch(text);
+    if(resourceMatch){
+      const qtyMatch = text.match(/(\d+(?:\.\d+)?)\s*(包|罐|瓶|公斤|公克|ml|L|朵|株|個|捲|桶|份|支|把|台|組|套|件|張|盆|塊|片|次)/);
+      const qty = qtyMatch ? Number(qtyMatch[1]) : 1;
+      const unit = qtyMatch ? qtyMatch[2] : (resourceMatch.item.unit || "個");
+      return { ambiguous:false, type:"resource", resourceKind:resourceMatch.kind, resourceId:resourceMatch.item.id, resourceName:resourceMatch.item.name, action, amount, qty, unit, rawText:text };
+    }
+  }
+  return { ambiguous:false, type:"plant", species:null, target:null, action, amount, rawText:text };
+}
+function restockToolFromVoice(id, qty, unitCost, source){
+  const t = state.tools.find(x=>x.id===id);
+  if(!t) return;
+  const addQty = Math.max(0, Number(qty)||0);
+  const cost = Math.max(0, Number(unitCost)||0);
+  t.qty = (Number(t.qty)||0) + addQty;
+  t.unitCost = cost || t.unitCost;
+  t.purchasedTotal = (Number(t.purchasedTotal)||0) + addQty*cost;
+  if(String(source||"").trim()){
+    t.source = String(source).trim();
+    state.resourceSources = Array.isArray(state.resourceSources) ? state.resourceSources : [];
+    if(!state.resourceSources.includes(t.source)) state.resourceSources.push(t.source);
+  }
+  saveState();
 }
 function confirmVoiceEntry(){
   const parsed = state.voice.parsed;
+  if(parsed.type==="resource" && parsed.action==="購入" && parsed.amount){
+    const qty = Math.max(1, Number(parsed.qty)||1);
+    const unitCost = qty ? (Number(parsed.amount)||0)/qty : (Number(parsed.amount)||0);
+    if(parsed.resourceKind==="tool"){
+      restockToolFromVoice(parsed.resourceId, qty, unitCost, "");
+      showToast(`已為工具「${parsed.resourceName}」新增庫存`, "fa-screwdriver-wrench");
+    } else {
+      purchaseMaterialSubmit(parsed.resourceName, qty, parsed.unit, unitCost, true, "");
+    }
+    state.voice = { text:"", listening:false, parsed:null, queryText:"", queryResult:null };
+    render();
+    return;
+  }
   if(parsed.action==="購入" && parsed.amount){
     addPlant({ name:parsed.species||"語音建檔植物", species:parsed.species,
       source: state.markets[0]?.id, price:parsed.amount, acquireDate: todayStr(),
@@ -3036,7 +2997,7 @@ function renderPlants(){
 
             <div class="mt-3 space-y-2.5 text-xs text-stone-500">
               <div class="flex items-center gap-2">
-                <span class="w-7 h-7 rounded-lg bg-sky-50 text-sky-700 grid place-items-center shrink-0">
+                <span class="w-7 h-7 rounded-lg bg-sky-50 text-sky-700 grid place-items-center shrink-0 text-sm">
                   <i class="fa-solid fa-camera"></i>
                 </span>
                 <div>
@@ -3045,7 +3006,7 @@ function renderPlants(){
                 </div>
               </div>
               <div class="flex items-center gap-2">
-                <span class="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-700 grid place-items-center shrink-0">
+                <span class="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-700 grid place-items-center shrink-0 text-sm">
                   <i class="fa-solid fa-location-dot"></i>
                 </span>
                 <div class="min-w-0">
@@ -3055,7 +3016,7 @@ function renderPlants(){
               </div>
 
               <div class="flex items-center gap-2">
-                <span class="w-7 h-7 rounded-lg bg-amber-50 text-amber-700 grid place-items-center shrink-0">
+                <span class="w-7 h-7 rounded-lg bg-amber-50 text-amber-700 grid place-items-center shrink-0 text-sm">
                   <i class="fa-solid fa-box"></i>
                 </span>
                 <div>
@@ -4270,8 +4231,9 @@ function renderVoice(){
     const p = v.parsed;
     parsedHtml = `<div class="bg-stone-50 rounded-2xl p-4 text-sm space-y-1 mt-3">
       <p class="text-stone-500">解析結果（尚未寫入資料庫，請確認）</p>
-      <p>動作：<b>${p.action}</b> · 品項：<b>${esc(p.species||"未辨識")}</b> · 金額：<b>${p.amount??"未辨識"}</b></p>
+      <p>動作：<b>${p.action}</b> · 品項：<b>${esc(p.type==="resource"?p.resourceName:(p.species||"未辨識"))}</b> · 金額：<b>${p.amount??"未辨識"}</b></p>
       ${p.target?`<p class="text-stone-400 text-xs">對應植物：${esc(p.target.name)}（${esc(p.target.location)}）</p>`:""}
+      ${p.type==="resource"?`<p class="text-stone-400 text-xs">將新增採購：${esc(p.resourceName)} × ${p.qty}${esc(p.unit)}（單價約 $${p.qty?Math.round(p.amount/p.qty):p.amount}，${p.resourceKind==="tool"?"工具":"耗材"}）</p>`:""}
       <div class="flex justify-end gap-2 mt-2">
         <button data-action="cancel-voice-parse" class="bg-white text-stone-600 border border-stone-200 px-3 py-1.5 text-xs rounded-xl font-medium transition-all duration-300 hover:scale-105 active:scale-95">取消</button>
         <button data-action="confirm-voice" class="bg-gradient-to-r from-emerald-500 to-emerald-700 text-white px-3 py-1.5 text-xs rounded-xl font-medium shadow-md transition-all duration-300 hover:scale-105 active:scale-95"><i class="fa-solid fa-check"></i> 確認送出</button>
@@ -4286,12 +4248,6 @@ function renderVoice(){
     </div>`;
   }
 
-  let queryHtml = "";
-  if(v.queryResult){
-    queryHtml = v.queryResult.length ? `<div class="space-y-1">${v.queryResult.map(p=>`<div class="text-sm bg-stone-50 rounded-xl px-3 py-2 flex flex-wrap justify-between gap-x-2 gap-y-0.5"><span>${esc(p.name)}</span><span class="text-stone-400 text-xs">${esc(p.location)}</span></div>`).join("")}</div>`
-      : `<p class="text-sm text-stone-400">找不到符合的存活植物。</p>`;
-  }
-
   document.getElementById("main-content").innerHTML = `
     <div class="space-y-4 sm:space-y-6">
       <h1 class="font-serif-cjk text-xl sm:text-2xl font-bold text-stone-800">AI 自然語言語音管理</h1>
@@ -4299,19 +4255,11 @@ function renderVoice(){
         <h3 class="font-serif-cjk text-base sm:text-lg font-bold text-stone-800 flex items-center gap-2 mb-3"><i class="fa-solid fa-microphone text-emerald-600"></i> 語意結構化拆解</h3>
         ${state.apiOffline?`<p class="text-xs text-orange-600 flex items-center gap-1 mb-3"><i class="fa-solid fa-plug-circle-xmark"></i> 語音辨識 API 目前離線，請改用文字輸入模擬。</p>`:""}
         <div class="flex gap-2 mb-3 flex-wrap">
-          <input id="voice-text" class="px-3 py-2 rounded-xl border border-stone-200 bg-white/70 text-sm flex-1 min-w-[140px]" placeholder="例如：買了兩盆百合花三百元 / 靠近窗台的那盆" value="${esc(v.text)}" />
+          <input id="voice-text" class="px-3 py-2 rounded-xl border border-stone-200 bg-white/70 text-sm flex-1 min-w-[140px]" placeholder="例如：買了兩盆百合花三百元 / 買了一包培養土80元" value="${esc(v.text)}" />
           <button data-action="voice-listen" ${state.apiOffline?'disabled':''} class="bg-gradient-to-r from-amber-400 to-amber-600 text-white px-4 py-2 text-sm rounded-xl font-medium shadow-md transition-all duration-300 hover:scale-105 active:scale-95 disabled:opacity-40 flex items-center gap-1.5"><i class="fa-solid fa-volume-high"></i> ${v.listening?"聆聽中...":"語音輸入"}</button>
           <button data-action="voice-parse" class="bg-gradient-to-r from-emerald-500 to-emerald-700 text-white px-4 py-2 text-sm rounded-xl font-medium shadow-md transition-all duration-300 hover:scale-105 active:scale-95">拆解語意</button>
         </div>
         ${parsedHtml}
-      </div>
-      <div class="bg-white/80 backdrop-blur-md border border-white/40 shadow-xl rounded-2xl sm:rounded-3xl p-4 sm:p-6">
-        <h3 class="font-serif-cjk text-base sm:text-lg font-bold text-stone-800 flex items-center gap-2 mb-3"><i class="fa-solid fa-magnifying-glass text-emerald-600"></i> 自然語言查詢</h3>
-        <div class="flex gap-2 mb-3">
-          <input id="query-text" class="px-3 py-2 rounded-xl border border-stone-200 bg-white/70 text-sm flex-1" placeholder="例如：目前百合還剩幾株？" value="${esc(v.queryText)}" />
-          <button data-action="voice-query" class="bg-gradient-to-r from-emerald-500 to-emerald-700 text-white px-4 py-2 text-sm rounded-xl font-medium shadow-md transition-all duration-300 hover:scale-105 active:scale-95">查詢</button>
-        </div>
-        ${queryHtml}
       </div>
     </div>`;
 }
@@ -4325,7 +4273,7 @@ function csvCell(value){
 }
 function downloadCSV(filename, rows){
   const csv = rows.map(row=>row.map(csvCell).join(",")).join("\n");
-  const blob = new Blob(["\\uFEFF"+csv], {type:"text/csv;charset=utf-8;"});
+  const blob = new Blob(["\uFEFF"+csv], {type:"text/csv;charset=utf-8;"});
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href=url; a.download=filename; document.body.appendChild(a); a.click(); a.remove();
@@ -4520,33 +4468,6 @@ function renderReports(){
               </p>
             </div>
           </div>
-        </div>
-      </section>
-
-      <section class="bg-white rounded-[1.8rem] border border-stone-100 shadow-sm p-4 sm:p-6">
-        <div class="flex items-center justify-between gap-3 flex-wrap">
-          <div>
-            <h2 class="font-serif-cjk text-lg font-bold text-stone-800">圖表資料表</h2>
-            <p class="text-xs text-stone-400 mt-1">圓餅圖同步轉成可閱讀表格，金額會隨紀錄即時更新。</p>
-          </div>
-          <button onclick="exportFullReportCSV()" class="text-xs px-3 py-1.5 rounded-xl bg-emerald-600 text-white hover:scale-105 transition">
-            <i class="fa-solid fa-file-csv mr-1"></i>下載完整 CSV
-          </button>
-        </div>
-        <div class="overflow-x-auto mt-4">
-          <table class="w-full text-sm">
-            <thead><tr class="text-left text-xs text-stone-400 border-b border-stone-100">
-              <th class="py-2 pr-3">花費分類</th><th class="py-2 pr-3 text-right">金額</th><th class="py-2 text-right">占比</th>
-            </tr></thead>
-            <tbody>
-              ${categories.map(c=>`<tr class="border-b border-stone-50">
-                <td class="py-3 pr-3 text-stone-700">${c.name}</td>
-                <td class="py-3 pr-3 text-right font-semibold">$${c.value.toLocaleString()}</td>
-                <td class="py-3 text-right text-stone-500">${totalCost?Math.round(c.value/totalCost*100):0}%</td>
-              </tr>`).join("")}
-              <tr><td class="py-3 font-bold text-stone-800">總花費</td><td class="py-3 text-right font-bold text-emerald-700">$${totalCost.toLocaleString()}</td><td class="py-3 text-right font-bold">100%</td></tr>
-            </tbody>
-          </table>
         </div>
       </section>
 
@@ -5372,7 +5293,7 @@ render();
     const totalTools=state.tools.reduce((n,t)=>n+(Number(t.qty)||0),0);
     const lowTools=state.tools.filter(t=>(Number(t.qty)||0)<=1).length;
     const normalTools=state.tools.filter(t=>(Number(t.qty)||0)>1).length;
-    const toolsTotalValue=state.tools.reduce((n,t)=>n+(Number(t.qty)||0)*(Number(t.unitCost)||0),0);
+    const toolsPurchasedTotal=state.tools.reduce((n,t)=>n+(Number(t.purchasedTotal)??((Number(t.qty)||0)*(Number(t.unitCost)||0))),0);
     const totalMaterialUnits=state.materials.reduce((n,m)=>n+(Number(m.stock)||0),0);
 
     /* ===== 耗材／資材：與原本 renderMaterials() 完全相同的計算方式，只是換一套版面 ===== */
@@ -5380,32 +5301,26 @@ render();
     const usedMaterialCost = state.materials.reduce((s,m)=>s+(Number(m.usedCost)||0),0);
     const purchasedMaterialCost = state.materials.reduce((s,m)=>s+(Number(m.purchaseTotalCost)||((Number(m.stock)||0)*(Number(m.unitCost)||0)),0),0);
 
-    const materialCards=state.materials.map(m=>{
+    /* ===== 合併檢視：資源種類、投入總值一律用「累計投入成本」，使用 1 只扣庫存數量，不會讓總值跟著變少 ===== */
+    const resourceKindCount = state.tools.length + state.materials.length;
+    const combinedInvestedValue = toolsPurchasedTotal + purchasedMaterialCost;
+    const lowStockCount = state.tools.filter(t=>(Number(t.qty)||0)<=1).length + state.materials.filter(m=>(Number(m.stock)||0)<=0).length;
+
+    const materialCardsRaw=state.materials.map(m=>{
       const batches=Array.isArray(m.batches)?m.batches:[];
       const remainingValue=batches.reduce((sum,b)=>sum+(Number(b.remainingQty)||0)*(Number(b.unitCost)||0),0);
-      const purchaseHistory=Array.isArray(m.purchaseHistory)?m.purchaseHistory:batches.map(b=>({date:b.date,qty:b.qty,unitCost:b.unitCost,totalCost:b.totalCost}));
-      const batchHtml=purchaseHistory.length ? purchaseHistory.map((r,idx)=>{
-        const b=batches[idx];
-        const remain=b?Number(b.remainingQty)||0:0;
-        return `<div class="material-batch-row">
-          <div class="row-top"><span>${esc2(r.date)} · 購入 ${Number(r.qty)||0}${esc2(r.unit || batches[idx]?.unit || m.unit)}</span><b>$${(Number(r.unitCost)||0).toLocaleString()}/${esc2(r.unit || batches[idx]?.unit || m.unit)}</b></div>
-          <div class="row-bottom"><span>本批成本 $${(Number(r.totalCost)||0).toLocaleString()}</span><span class="${remain>0?'in-stock':''}">剩餘 ${remain}${esc2(m.unit)}</span></div>
-        </div>`;
-      }).join('') : `<div class="material-batch-empty">尚無採購紀錄</div>`;
-      const batchCount=purchaseHistory.length;
       const inStock=(Number(m.stock)||0)>0;
-      return `<article class="material-card material-card-v3 ${inStock?'':'empty'}">
+      return { name:m.name, html:`<article class="material-card material-card-v3 ${inStock?'':'empty'}">
         <div class="material-card-v3-top">
           <div class="material-card-v3-name-wrap">
             <div class="material-card-v3-icon ${inStock?'':'empty'}">📦</div>
             <div class="min-w-0">
               <p class="material-card-v3-name">${esc2(m.name)}</p>
-              <p class="material-card-v3-sub">${batchCount} 個採購批次 · 價格各自保留</p>
               <p class="card-source-line">購買來源：${m.source?esc2(m.source):'未填寫'}</p>
             </div>
           </div>
           <div class="card-top-actions">
-            <button type="button" data-ext-action="edit-material" data-id="${m.id}" title="編輯耗材" class="card-edit-btn">✏️</button>
+            <button type="button" data-ext-action="edit-material" data-id="${m.id}" title="編輯" class="card-edit-btn">✏️</button>
             <span class="material-card-v3-status ${inStock?'':'empty'}">${inStock?'有庫存':'缺貨'}</span>
           </div>
         </div>
@@ -5413,65 +5328,29 @@ render();
         <div class="material-stats-v3">
           <div class="material-stat-box">
             <span>目前庫存</span>
-            <b>${m.stock} <select data-material-unit-select data-id="${m.id}" class="material-unit-select" title="修改單位">${['包','罐','瓶','公斤','公克','ml','L','朵','株','個','捲','桶'].concat(m.unit&&!['包','罐','瓶','公斤','公克','ml','L','朵','株','個','捲','桶'].includes(m.unit)?[m.unit]:[]).map(u=>`<option value="${esc2(u)}" ${u===m.unit?'selected':''}>${esc2(u)}</option>`).join('')}</select></b>
+            <b>${m.stock}</b>
           </div>
           <div class="material-stat-box">
-            <span>最新採購價</span>
-            <b>$${(Number(m.unitCost)||0).toLocaleString()} <span class="text-[10px] font-normal text-stone-400">/${esc2(m.unit)}</span></b>
+            <span>採購價</span>
+            <b>$${(Number(m.unitCost)||0).toLocaleString()}</b>
           </div>
         </div>
         <p class="material-card-v3-value">💰 剩餘庫存價值 $${remainingValue.toLocaleString()}</p>
 
-        <button type="button" data-action="toggle-material-batches" data-id="${m.id}" aria-expanded="false" class="material-batch-toggle">
-          <span>🗂️ 查看採購批次（${batchCount}）</span>
-          <i class="fa-chevron-down" style="font-style:normal">▾</i>
-        </button>
-        <div class="material-batches hidden">${batchHtml}</div>
-
-        <div class="material-card-v3-footer">
-          <span class="material-used-note">已使用 ${Number(m.usedQty)||0} ${esc2(m.unit)} · FIFO 成本 $${(Number(m.usedCost)||0).toLocaleString()}</span>
+        <div class="tool-card-v3-divider"></div>
+        <div class="tool-card-v3-bottom tool-card-v3-bottom-end">
           <button data-action="use-material" data-id="${m.id}" ${inStock?'':'disabled'} class="material-use-v3">
             <span>－</span><span>使用 1</span>
           </button>
         </div>
-      </article>`;
-    }).join('') || `<div class="resource-empty"><span style="font-size:22px;display:inline-block;margin-bottom:8px;">📭</span><b>還沒有耗材</b><span>新增第一筆採購，開始追蹤庫存與使用成本。</span></div>`;
+      </article>` };
+    });
 
-    const materialSection=`<section class="resource-panel resource-material-panel material-panel-v3">
-      <div class="material-panel-v3-head">
-        <div class="material-panel-v3-heading">
-          <span class="resource-title-icon material">📦</span>
-          <div>
-            <div class="material-panel-v3-kicker">MATERIAL INVENTORY</div>
-            <h2>耗材與資材庫存</h2>
-            <p>依採購批次追蹤庫存與使用成本，與工具分開管理。</p>
-          </div>
-        </div>
-        <div class="flex items-center gap-2 flex-wrap"><button data-action="open-add-material" class="material-add-v3"><span>＋</span><span>新增採購</span></button></div>
-      </div>
-
-      <div class="material-summary-v3">
-        <div class="material-summary-item"><span class="material-summary-dot"></span><div><small>耗材種類</small><b>${state.materials.length} 種</b></div></div>
-        <div class="material-summary-item"><span class="material-summary-dot value"></span><div><small>剩餘庫存價值</small><b>$${totalMaterialCost.toLocaleString()}</b></div></div>
-        <div class="material-summary-item"><span class="material-summary-dot used"></span><div><small>已使用成本</small><b>$${usedMaterialCost.toLocaleString()}</b></div></div>
-        <div class="material-summary-item"><span class="material-summary-dot purchased"></span><div><small>累計採購成本</small><b>$${purchasedMaterialCost.toLocaleString()}</b></div></div>
-      </div>
-
-      <div class="material-list-v3-head">
-        <div><b>耗材清單</b><span>採購批次、剩餘庫存與使用紀錄</span></div>
-      </div>
-      <div class="material-grid-v3">${materialCards}</div>
-    </section>`;
-
-    root.innerHTML=`<div class="space-y-4 sm:space-y-6 fade-in">
-      <div><h1 class="font-serif-cjk text-xl sm:text-2xl font-bold text-stone-800">工具與耗材</h1><p class="resource-page-intro">工具與耗材分開管理，快速掌握目前庫存與使用狀態。</p></div>
-    </div>`;
-
-    const toolCards=state.tools.map((t,index)=>{
+    const toolCardsRaw=state.tools.map((t,index)=>{
       const qty=Number(t.qty)||0, low=qty<=1, empty=qty<=0;
       const unitCost=Number(t.unitCost)||0;
       const toolEmoji=empty?'🚫':'🔧';
-      return `<article class="resource-tool-card tool-card-v3 ${low?'low':''} ${empty?'empty':''}">
+      return { name:t.name, html:`<article class="resource-tool-card tool-card-v3 ${low?'low':''} ${empty?'empty':''}">
         <div class="tool-card-v3-top">
           <div class="tool-card-v3-icon ${low?'low':''} ${empty?'empty':''}">
             ${toolEmoji}
@@ -5480,78 +5359,61 @@ render();
             <div class="tool-card-v3-title-row">
               <p class="resource-tool-name">${esc2(t.name)}</p>
               <div class="card-top-actions">
-                <button type="button" data-ext-action="edit-tool" data-id="${t.id}" title="編輯工具" class="card-edit-btn">✏️</button>
+                <button type="button" data-ext-action="edit-tool" data-id="${t.id}" title="編輯" class="card-edit-btn">✏️</button>
                 <span class="resource-status ${low?'low':''}">${empty?'已用完':low?'低庫存':'正常'}</span>
               </div>
             </div>
-            <p class="resource-tool-unit">單位：${esc2(t.unit||'個')}</p>
             <p class="card-source-line">購買來源：${t.source?esc2(t.source):'未填寫'}</p>
           </div>
         </div>
         <div class="tool-stats-v3">
-          <div class="tool-stat-box"><span>採購單價</span><b>$${unitCost.toLocaleString()}</b></div>
-          <div class="tool-stat-box"><span>工具總值</span><b>$${(qty*unitCost).toLocaleString()}</b></div>
+          <div class="tool-stat-box"><span>目前庫存</span><b>${qty}</b></div>
+          <div class="tool-stat-box"><span>採購價</span><b>$${unitCost.toLocaleString()}</b></div>
         </div>
+        <p class="material-card-v3-value">💰 剩餘庫存價值 $${(qty*unitCost).toLocaleString()}</p>
         <div class="tool-card-v3-divider"></div>
-        <div class="tool-card-v3-bottom">
-          <div class="tool-stock-v3">
-            <span>目前數量</span>
-            <div><strong>${qty}</strong><em>${esc2(t.unit||'個')}</em></div>
-          </div>
+        <div class="tool-card-v3-bottom tool-card-v3-bottom-end">
           <button data-ext-action="tool-use" data-id="${t.id}" ${qty<=0?'disabled':''} class="resource-use-btn tool-use-v3">
             <span>－</span><span>${qty<=0?'已用完':'使用 1'}</span>
           </button>
         </div>
-      </article>`;
-    }).join('') || `<div class="resource-empty"><span style="font-size:22px;display:inline-block;margin-bottom:8px;">🧰</span><b>還沒有工具</b><span>新增修枝剪、澆水壺、電子秤等常用工具。</span></div>`;
+      </article>` };
+    });
 
-    const toolSection=`<section class="resource-panel resource-tool-panel tool-panel-v3">
-      <div class="tool-panel-v3-head">
-        <div class="tool-panel-v3-heading">
-          <span class="resource-title-icon tool">🧰</span>
-          <div>
-            <div class="tool-panel-v3-kicker">TOOL INVENTORY</div>
-            <h2>我的工具</h2>
-            <p>工具不會被當成耗材扣除成本，單獨管理數量、單價與使用狀態。</p>
+    /* ===== 合併並依名稱排序，讓工具與耗材混合顯示在同一份清單中 ===== */
+    const mergedCards = [...toolCardsRaw, ...materialCardsRaw]
+      .sort((a,b)=>String(a.name).localeCompare(String(b.name),'zh-Hant'))
+      .map(c=>c.html).join('') || `<div class="resource-empty"><span style="font-size:22px;display:inline-block;margin-bottom:8px;">🧰</span><b>還沒有工具或耗材</b><span>新增第一項工具或採購，開始追蹤庫存與使用狀態。</span></div>`;
+
+    root.innerHTML=`<div class="space-y-4 sm:space-y-6 fade-in">
+      <section class="resource-panel resource-unified-panel tool-panel-v3">
+        <div class="tool-panel-v3-head material-panel-v3-head">
+          <div class="tool-panel-v3-heading material-panel-v3-heading">
+            <span class="resource-title-icon tool">🧰</span>
+            <div>
+              <div class="tool-panel-v3-kicker">RESOURCE INVENTORY</div>
+              <h2>工具與耗材</h2>
+              <p>所有工具和耗材放在同一份清單裡管理。使用 1 只會扣庫存數量，不會讓下面的投入總值跟著變少。</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-2 flex-wrap">
+            <button data-action="open-add-material" class="material-add-v3"><span>＋</span><span>新增採購</span></button>
           </div>
         </div>
-        <div class="flex items-center gap-2 flex-wrap"><button data-ext-action="toggle-tool-form" class="resource-primary blue tool-add-v3"><span>＋</span><span>新增工具</span></button></div>
-      </div>
 
-      <div class="tool-summary-v3">
-        <div class="tool-summary-item"><span class="summary-dot all"></span><div><small>工具種類</small><b>${state.tools.length}</b><em>種</em></div></div>
-        <div class="tool-summary-item"><span class="summary-dot stock"></span><div><small>目前總數</small><b>${totalTools}</b><em>件</em></div></div>
-        <div class="tool-summary-item"><span class="summary-dot value"></span><div><small>工具總值</small><b>$${toolsTotalValue.toLocaleString()}</b></div></div>
-        <div class="tool-summary-item"><span class="summary-dot normal"></span><div><small>庫存正常</small><b>${normalTools}</b><em>項</em></div></div>
-        <div class="tool-summary-item ${lowTools?'has-warning':''}"><span class="summary-dot warning"></span><div><small>需要補充</small><b>${lowTools}</b><em>項</em></div></div>
-      </div>
-
-      <div id="tool-form-panel" class="resource-tool-form hidden tool-form-v3">
-        <div class="tool-form-v3-title">
-          <div class="tool-form-v3-icon">🔧</div>
-          <div><b>新增工具</b><p>建立後會直接出現在工具庫，不會計入耗材成本。</p></div>
+        <div class="tool-summary-v3">
+          <div class="tool-summary-item"><span class="summary-dot all"></span><div><small>資源種類</small><b>${resourceKindCount}</b><em>種</em></div></div>
+          <div class="tool-summary-item"><span class="summary-dot value"></span><div><small>累計投入成本</small><b>$${combinedInvestedValue.toLocaleString()}</b></div></div>
+          <div class="tool-summary-item"><span class="summary-dot used"></span><div><small>耗材已使用成本</small><b>$${usedMaterialCost.toLocaleString()}</b></div></div>
+          <div class="tool-summary-item ${lowStockCount?'has-warning':''}"><span class="summary-dot warning"></span><div><small>需要補充</small><b>${lowStockCount}</b><em>項</em></div></div>
         </div>
-        <div class="resource-form-grid tool-form-v3-grid">
-          <label><span>工具名稱</span><input id="ext-tool-name" class="${extInput}" placeholder="例如：修枝剪、澆水壺、電子秤"></label>
-          <label><span>初始數量</span><input id="ext-tool-qty" type="number" min="0" value="1" class="${extInput}" placeholder="數量"></label>
-          <label><span>單位</span><select id="ext-tool-unit" class="${extInput}"><option>個</option><option>把</option><option>支</option><option>台</option><option>組</option><option>套</option><option>件</option><option>罐</option><option>盆</option><option value="自訂">自訂</option></select></label>
-          <label class="tool-cost-wrap"><span>採購單價</span><input id="ext-tool-cost" type="number" min="0" step="1" value="0" class="${extInput}" placeholder="每單位金額"></label>
-          <label id="custom-unit-wrap" class="tool-custom-unit-wrap hidden"><span>自訂單位</span><input id="ext-tool-custom-unit" class="${extInput}" placeholder="例如：捲、桶"></label>
-          <button data-ext-action="add-tool" class="resource-primary blue tool-create-v3"><span>✓</span><span>建立工具</span></button>
+
+        <div class="tool-list-v3-head">
+          <div><b>資源清單</b><span>依名稱排序，統一顯示</span></div>
         </div>
-        <div class="tool-form-v3-source-row"><label><span>來源</span><input id="ext-tool-source" class="${extInput}" placeholder="例如：五金行、網路商店、朋友贈送"></label></div>
-      </div>
-
-      <div class="tool-list-v3-head">
-        <div><b>工具清單</b><span>可重複使用的農務工具</span></div>
-        <span class="tool-list-v3-note">ℹ️ 使用 1 只會扣除工具數量</span>
-      </div>
-      <div class="resource-tool-grid tool-grid-v3">${toolCards}</div>
-    </section>`;
-
-    // 耗材／資材與工具兩個區塊採同一套視覺語言呈現，資料與互動邏輯維持原樣。
-    root.insertAdjacentHTML('beforeend',materialSection);
-    root.insertAdjacentHTML('beforeend',toolSection);
+        <div class="unified-grid-v3">${mergedCards}</div>
+      </section>
+    </div>`;
   }
 
   function renderCompostPage(){
@@ -5581,7 +5443,7 @@ render();
         ${ratio!=null&&ratio<25?`<div class="compost-alert"><i class="fa-solid fa-triangle-exclamation"></i> 氮含量偏高，建議加入落葉、木屑等乾料。</div>`:''}
         <div class="compost-add"><select id="compost-material-${bin.id}" class="${extInput}">${presetOptions}</select><input id="compost-weight-${bin.id}" type="number" min="0" class="${extInput}" placeholder="投入重量（g）"><button data-action="submit-compost" data-bin-id="${bin.id}" class="resource-primary green"><i class="fa-solid fa-plus"></i> 記錄投入</button></div>
         <div class="compost-history"><div class="compost-subhead"><b>投入紀錄</b><span>${inputs.length} 筆</span></div>${history}</div>
-        <div class="compost-fields"><label>目前濕度（%）<input data-compost-field="humidity" data-id="${bin.id}" type="number" min="0" max="100" value="${humidity}" class="${extInput}" placeholder="例如 60"></label><label>完成日期<input data-compost-field="finishedDate" data-id="${bin.id}" type="date" value="${esc2(bin.finishedDate||'')}" class="${extInput}"></label><label>狀態<select data-compost-field="status" data-id="${bin.id}" class="${extInput}"><option ${status==='進行中'?'selected':''}>進行中</option><option ${status==='完成'?'selected':''}>完成</option><option ${status==='需調整'?'selected':''}>需調整</option></select></label><label>目前狀態<input data-compost-field="condition" data-id="${bin.id}" value="${esc2(bin.condition||'')}" class="${extInput}" placeholder="例如：成熟、鬆軟、下陷"></label><label>用途／備註<input data-compost-field="effectiveness" data-id="${bin.id}" value="${esc2(bin.effectiveness||'')}" class="${extInput}" placeholder="例如：改良盆土"></label></div>
+        <div class="compost-fields"><label>目前濕度（%）<input data-compost-field="humidity" data-id="${bin.id}" type="number" min="0" max="100" value="${humidity}" class="${extInput}" placeholder="例如 60"></label><label>完成日期<input data-compost-field="finishedDate" data-id="${bin.id}" type="date" value="${esc2(bin.finishedDate||'')}" class="${extInput}"></label><label>狀態<select data-compost-field="status" data-id="${bin.id}" class="${extInput}"><option ${status==='進行中'?'selected':''}>進行中</option><option ${status==='完成'?'selected':''}>完成</option><option ${status==='需調整'?'selected':''}>需調整</option></select></label><label>目前狀態<input data-compost-field="condition" data-id="${bin.id}" value="${esc2(bin.condition||'')}" class="${extInput}" placeholder="例如：成熟、鬆軟、下陷"></label><label class="compost-field-full">用途／備註<textarea data-compost-field="effectiveness" data-id="${bin.id}" class="${extInput} compost-effectiveness-textarea" placeholder="例如：改良盆土">${esc2(bin.effectiveness||'')}</textarea></label></div>
         <label class="compost-photo-upload"><span><i class="fa-solid fa-camera"></i> 狀態照片</span><input data-compost-photo="${bin.id}" type="file" accept="image/*" class="${extInput}"></label>
         ${photos?`<div class="compost-photos">${photos}</div>`:''}
       </article>`;
@@ -5696,7 +5558,7 @@ render();
     if(el?.value==="__add_source__"){el.value="";openResourceSourceManager();}
   }
 
-  function addTool(){const name=document.getElementById('ext-tool-name').value.trim();if(!name){showToast('請輸入工具名稱','fa-circle-exclamation');return;} const unitSelect=document.getElementById('ext-tool-unit'); const custom=document.getElementById('ext-tool-custom-unit'); const unit=unitSelect?.value==='自訂'?(custom?.value.trim()||'個'):(unitSelect?.value||'個'); const unitCost=Number(document.getElementById('ext-tool-cost')?.value)||0; const source=document.getElementById('ext-tool-source')?.value.trim()||''; state.tools.push({id:uid('tl'),name,qty:Number(document.getElementById('ext-tool-qty').value)||0,unit,unitCost,source}); if(source){state.resourceSources=Array.isArray(state.resourceSources)?state.resourceSources:[]; if(!state.resourceSources.includes(source))state.resourceSources.push(source);} saveState(); showToast('已新增工具','fa-screwdriver-wrench'); render();}
+  function addTool(){const name=document.getElementById('ext-tool-name').value.trim();if(!name){showToast('請輸入工具名稱','fa-circle-exclamation');return;} const unitSelect=document.getElementById('ext-tool-unit'); const custom=document.getElementById('ext-tool-custom-unit'); const unit=unitSelect?.value==='自訂'?(custom?.value.trim()||'個'):(unitSelect?.value||'個'); const qty=Number(document.getElementById('ext-tool-qty').value)||0; const unitCost=Number(document.getElementById('ext-tool-cost')?.value)||0; const source=document.getElementById('ext-tool-source')?.value.trim()||''; state.tools.push({id:uid('tl'),name,qty,unit,unitCost,source,purchasedTotal:qty*unitCost}); if(source){state.resourceSources=Array.isArray(state.resourceSources)?state.resourceSources:[]; if(!state.resourceSources.includes(source))state.resourceSources.push(source);} saveState(); showToast('已新增工具','fa-screwdriver-wrench'); render();}
   function useTool(id){const t=state.tools.find(x=>x.id===id);if(!t)return;t.qty=Math.max(0,(Number(t.qty)||0)-1);showToast(`工具「${t.name}」庫存 -1`,'fa-minus');render();}
   function openEditTool(id){
     const t=state.tools.find(x=>x.id===id); if(!t) return;
@@ -5737,6 +5599,7 @@ render();
     t.unit=document.getElementById('edit-tool-unit')?.value.trim()||'個';
     t.unitCost=Number(document.getElementById('edit-tool-cost')?.value)||0;
     t.source=document.getElementById('edit-tool-source')?.value.trim()||'';
+    t.purchasedTotal=t.qty*t.unitCost;
     saveState(); closeModal();
     showToast(`已更新工具「${t.name}」`,'fa-screwdriver-wrench'); render();
   }
