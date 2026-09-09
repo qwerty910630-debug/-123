@@ -4288,14 +4288,17 @@ function exportExpenseTableCSV(){
     s+(Array.isArray(b.inputs)?b.inputs.reduce((a,i)=>a+(Number(i.cost)||0),0):0),0);
   const potCost = state.plants.reduce((s,p)=>
     s+(Array.isArray(p.moveHistory)?p.moveHistory.reduce((a,h)=>a+(Number(h.cost)||Number(h.price)||0),0):0),0);
-  const otherCost = (state.expenses||[]).reduce((s,e)=>s+(Number(e.amount)||0),0);
+  const otherCost = (state.expenses||[]).reduce((s,e)=>s+(Number(e.amount)||0),0) + materialCost + potCost + compostCost;
+  const salesTotal = state.sales.filter(x=>!x.voided).reduce((s,x)=>s+(Number(x.salePrice)||0),0);
   const rows = [
     ["花費分類","金額","占總花費比例"],
-    ["植物購買",Math.round(plantCost),0],["工具",Math.round(toolCost),0],["耗材",Math.round(materialCost),0],["盆器",Math.round(potCost),0],["堆肥",Math.round(compostCost),0],["其他",Math.round(otherCost),0]
+    ["植物購買",Math.round(plantCost),0],["工具",Math.round(toolCost),0],["其他",Math.round(otherCost),0]
   ];
   const total=rows.slice(1).reduce((s,r)=>s+Number(r[1]||0),0);
   rows.slice(1).forEach(r=>r[2]=total?`${Math.round(r[1]/total*100)}%`:"0%");
   rows.push(["總花費",total,"100%"]);
+  rows.push(["",""," "]);
+  rows.push(["植物售出（收入，不計入花費）",Math.round(salesTotal),""]);
   downloadCSV(`植物管家_花費結構_${todayStr()}.csv`,rows);
   showToast("花費結構表已下載", "fa-download");
 }
@@ -4343,19 +4346,26 @@ function renderReports(){
     return s + history.reduce((a,h)=>a+(Number(h.cost)||Number(h.price)||0),0);
   },0);
 
-  const otherCost = Math.max(0, (state.expenses || []).reduce((s,x)=>s+(Number(x.amount)||0),0));
+  // 其他：把耗材、盆器、堆肥與雜項支出都併入「其他」，花費結構只保留三大類。
+  const otherCost = Math.max(0, (state.expenses || []).reduce((s,x)=>s+(Number(x.amount)||0),0))
+    + consumableCost + potCost + compostCost;
 
   const categories = [
     {name:"植物購買", value:Math.round(plantCost), icon:"fa-seedling"},
     {name:"工具", value:Math.round(toolCost), icon:"fa-screwdriver-wrench"},
-    {name:"耗材", value:Math.round(consumableCost), icon:"fa-toolbox"},
-    {name:"盆器", value:Math.round(potCost), icon:"fa-box"},
-    {name:"堆肥", value:Math.round(compostCost), icon:"fa-recycle"},
     {name:"其他", value:Math.round(otherCost), icon:"fa-ellipsis"}
   ];
 
   const totalCost = categories.reduce((s,x)=>s+x.value,0);
-  const chartColors = ["#059669","#f97316","#0ea5e9","#f59e0b","#8b5cf6","#78716c"];
+  const chartColors = ["#059669","#f97316","#78716c"];
+
+  // 植物售出：獨立於花費結構之外的收入明細，依日期新到舊排序。
+  const soldRows = state.sales.filter(s=>!s.voided).map(s=>({
+    title: s.target || "植物",
+    sub: `${s.buyer?`買家：${s.buyer}　·　`:""}${s.date||"未填日期"}`,
+    amount: Number(s.salePrice)||0,
+    date: s.date||""
+  })).sort((a,b)=>(b.date||"").localeCompare(a.date||""));
 
   // SVG 圓餅圖：不依賴第三方圖表套件
   let currentAngle = -90;
@@ -4406,7 +4416,7 @@ function renderReports(){
   const top = [...slices].sort((a,b)=>b.value-a.value)[0];
   const insight = top && top.value > 0
     ? `本期「${top.name}」支出最高，佔總花費 ${Math.round(top.pct*100)}%。`
-    : "目前尚無花費資料，新增植物、工具、耗材、盆器或堆肥紀錄後會自動統計。";
+    : "目前尚無花費資料，新增植物或工具、耗材採購紀錄後會自動統計。";
 
   document.getElementById("main-content").innerHTML = `
     <div class="space-y-5">
@@ -4439,6 +4449,7 @@ function renderReports(){
         </div>
       </div>
 
+      <div class="grid lg:grid-cols-2 gap-5 items-start">
       <section class="bg-[#fffdf8] rounded-[1.8rem] border border-white shadow-sm p-4 sm:p-6">
         <div class="flex items-start justify-between gap-3 flex-wrap">
           <div>
@@ -4460,7 +4471,7 @@ function renderReports(){
           </div>
         </div>
 
-        <div class="grid lg:grid-cols-[1fr_1fr] gap-6 items-center mt-5">
+        <div class="grid sm:grid-cols-[1fr_1fr] gap-6 items-center mt-5">
           <div class="relative mx-auto w-64 h-64">
             <svg viewBox="0 0 200 200" class="w-full h-full -rotate-0">
               ${chart}
@@ -4488,6 +4499,34 @@ function renderReports(){
         </div>
       </section>
 
+      <section class="bg-white rounded-[1.8rem] border border-stone-100 shadow-sm p-4 sm:p-6">
+        <div class="flex items-start justify-between gap-3 flex-wrap">
+          <div>
+            <h2 class="font-serif-cjk text-lg font-bold text-stone-800 flex items-center gap-2">
+              <span class="w-9 h-9 rounded-xl bg-amber-100 text-amber-700 grid place-items-center">
+                <i class="fa-solid fa-hand-holding-dollar"></i>
+              </span>
+              植物售出
+            </h2>
+            <p class="text-xs text-stone-400 mt-1">這是收入，跟左邊的花費結構分開看。</p>
+          </div>
+          <span class="text-xs px-3 py-1.5 rounded-full bg-amber-50 text-amber-700">
+            銷售收入 $${salesTotal.toLocaleString()}
+          </span>
+        </div>
+        <div class="mt-4 max-h-80 overflow-y-auto pr-1 divide-y divide-stone-100">
+          ${soldRows.length ? soldRows.map(r=>`
+            <div class="flex items-center justify-between gap-3 py-3">
+              <div class="min-w-0">
+                <p class="text-sm text-stone-700 truncate">${esc(r.title)}</p>
+                <p class="text-[10px] text-stone-400 truncate">${esc(r.sub)}</p>
+              </div>
+              <b class="text-sm text-amber-700 shrink-0">$${r.amount.toLocaleString()}</b>
+            </div>`).join("") : `<div class="rounded-2xl bg-stone-50 p-6 text-center text-xs text-stone-400">目前還沒有售出紀錄。</div>`}
+        </div>
+      </section>
+      </div>
+
       <section id="expense-category-detail" class="bg-white rounded-[1.8rem] border border-stone-100 shadow-sm p-4 sm:p-6">
         <div class="flex items-center justify-between gap-3">
           <div>
@@ -4497,7 +4536,7 @@ function renderReports(){
           <span class="text-[10px] text-stone-400">可點擊圓餅圖分類</span>
         </div>
         <div class="mt-4 rounded-2xl bg-stone-50 p-6 text-center text-xs text-stone-400">
-          點擊「植物購買、工具、耗材、盆器、堆肥或其他」查看明細
+          點擊「植物購買、工具或其他」查看明細
         </div>
       </section>
     </div>`;
@@ -4516,13 +4555,6 @@ function showExpenseCategory(category){
       amount:Number(p.price)||0,
       icon:"fa-seedling"
     })).filter(x=>x.amount>0);
-  }else if(category==="堆肥"){
-    state.compostBins.forEach(bin=>{
-      (bin.inputs||[]).forEach(i=>{
-        const amount=Number(i.cost)||0;
-        if(amount>0) rows.push({title:i.material||"堆肥材料",sub:`${bin.name||"堆肥箱"} · ${i.date||"－"}`,amount,icon:"fa-recycle"});
-      });
-    });
   }else if(category==="工具"){
     rows=(state.tools||[]).map(t=>({
       title:t.name||"工具",
@@ -4530,23 +4562,6 @@ function showExpenseCategory(category){
       amount:Number(t.purchasedTotal) ?? ((Number(t.qty)||0)*(Number(t.unitCost)||0)),
       icon:"fa-screwdriver-wrench"
     })).filter(x=>x.amount>0);
-  }else if(category==="耗材"){
-    (state.materials||[]).forEach(m=>{
-      const history=Array.isArray(m.purchaseHistory)&&m.purchaseHistory.length
-        ? m.purchaseHistory
-        : [{date:"－",qty:m.stock,unit:m.unit,totalCost:Number(m.purchaseTotalCost)||((Number(m.stock)||0)*(Number(m.unitCost)||0))}];
-      history.forEach(r=>{
-        const amount=Number(r.totalCost)||0;
-        if(amount>0) rows.push({title:m.name||"耗材",sub:`${r.date||"－"} · 購入 ${Number(r.qty)||0}${r.unit||m.unit||""}`,amount,icon:"fa-toolbox"});
-      });
-    });
-  }else if(category==="盆器"){
-    state.plants.forEach(p=>{
-      (p.moveHistory||[]).forEach(h=>{
-        const amount=Number(h.cost)||Number(h.price)||0;
-        if(amount>0) rows.push({title:`${p.name} · ${h.potSize||"－"}吋盆`,sub:h.date||"盆器紀錄",amount,icon:"fa-box"});
-      });
-    });
   }else if(category==="其他"){
     rows=(state.expenses||[]).map(e=>({
       title:e.name||e.title||"其他支出",
@@ -4554,6 +4569,30 @@ function showExpenseCategory(category){
       amount:Number(e.amount)||0,
       icon:"fa-ellipsis"
     })).filter(x=>x.amount>0);
+    // 併入耗材採購
+    (state.materials||[]).forEach(m=>{
+      const history=Array.isArray(m.purchaseHistory)&&m.purchaseHistory.length
+        ? m.purchaseHistory
+        : [{date:"－",qty:m.stock,unit:m.unit,totalCost:Number(m.purchaseTotalCost)||((Number(m.stock)||0)*(Number(m.unitCost)||0))}];
+      history.forEach(r=>{
+        const amount=Number(r.totalCost)||0;
+        if(amount>0) rows.push({title:m.name||"耗材",sub:`耗材採購 · ${r.date||"－"} · ${Number(r.qty)||0}${r.unit||m.unit||""}`,amount,icon:"fa-toolbox"});
+      });
+    });
+    // 併入盆器
+    state.plants.forEach(p=>{
+      (p.moveHistory||[]).forEach(h=>{
+        const amount=Number(h.cost)||Number(h.price)||0;
+        if(amount>0) rows.push({title:`${p.name} · ${h.potSize||"－"}吋盆`,sub:`盆器 · ${h.date||"盆器紀錄"}`,amount,icon:"fa-box"});
+      });
+    });
+    // 併入堆肥
+    state.compostBins.forEach(bin=>{
+      (bin.inputs||[]).forEach(i=>{
+        const amount=Number(i.cost)||0;
+        if(amount>0) rows.push({title:i.material||"堆肥材料",sub:`堆肥 · ${bin.name||"堆肥箱"} · ${i.date||"－"}`,amount,icon:"fa-recycle"});
+      });
+    });
   }
 
   rows = rows.map(r=>({...r, amount:Math.round(r.amount)}));
