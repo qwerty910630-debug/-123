@@ -2231,7 +2231,7 @@ function purchaseMaterialSubmit(name, qty, unit, cost, force, source=""){
       id:uid("mt"), name, stock:quantity, unit, unitCost,
       purchaseTotalCost:quantity*unitCost, usedQty:0, usedCost:0, usageHistory:[], purchaseHistory:[{date:todayStr(), qty:quantity, unit:unit || "單位", unitCost, totalCost:quantity*unitCost}],
       batches:[{date:todayStr(), qty:quantity, unit:unit || "單位", remainingQty:quantity, unitCost, totalCost:quantity*unitCost}],
-      source:String(source||"").trim()
+      source:String(source||"").trim(), createdAt:Date.now()
     });
   }
   closeModal();
@@ -2964,7 +2964,8 @@ function renderPlants(){
   }
 
   const filteredPlants = state.plants.filter(p => plantFilter==='全部' || p.status===plantFilter);
-  const cards = filteredPlants.map(p => {
+  // 新增的植物顯示在最上面，方便剛新增完馬上看到。
+  const cards = [...filteredPlants].reverse().map(p => {
     const thumb = plantThumbUrl(p);
     const statusClass = p.status==="存活"
       ? "bg-emerald-100 text-emerald-700"
@@ -3706,7 +3707,7 @@ function renderMarket(){
   const filteredStats = allStats.filter(m=>matchesQuery(m.name));
   const visibleStats = marketUIState.showAllStats ? filteredStats : filteredStats.slice(0,6);
 
-  const filteredMarkets = state.markets.filter(m=>matchesQuery(m.name));
+  const filteredMarkets = [...state.markets].filter(m=>matchesQuery(m.name)).reverse();
 
   const marketOptions = state.markets.map(m=>`<option value="${m.id}">${esc(m.name)}</option>`).join("");
   const locationOptions = LOCATIONS.map(l=>`<option value="${esc(l)}">${esc(l)}</option>`).join("");
@@ -4281,7 +4282,8 @@ function downloadCSV(filename, rows){
 }
 function exportExpenseTableCSV(){
   const plantCost = state.plants.reduce((s,p)=>s+(Number(p.price)||0),0);
-  const materialCost = (state.materials||[]).reduce((s,m)=>s+(Number(m.usedCost)||0),0);
+  const toolCost = (state.tools||[]).reduce((s,t)=>s+(Number(t.purchasedTotal) ?? ((Number(t.qty)||0)*(Number(t.unitCost)||0))),0);
+  const materialCost = (state.materials||[]).reduce((s,m)=>s+(Number(m.purchaseTotalCost)||((Number(m.stock)||0)*(Number(m.unitCost)||0))),0);
   const compostCost = state.compostBins.reduce((s,b)=>
     s+(Array.isArray(b.inputs)?b.inputs.reduce((a,i)=>a+(Number(i.cost)||0),0):0),0);
   const potCost = state.plants.reduce((s,p)=>
@@ -4289,7 +4291,7 @@ function exportExpenseTableCSV(){
   const otherCost = (state.expenses||[]).reduce((s,e)=>s+(Number(e.amount)||0),0);
   const rows = [
     ["花費分類","金額","占總花費比例"],
-    ["植物購買",plantCost,0],["耗材（已使用）",materialCost,0],["盆器",potCost,0],["堆肥",compostCost,0],["其他",otherCost,0]
+    ["植物購買",Math.round(plantCost),0],["工具",Math.round(toolCost),0],["耗材",Math.round(materialCost),0],["盆器",Math.round(potCost),0],["堆肥",Math.round(compostCost),0],["其他",Math.round(otherCost),0]
   ];
   const total=rows.slice(1).reduce((s,r)=>s+Number(r[1]||0),0);
   rows.slice(1).forEach(r=>r[2]=total?`${Math.round(r[1]/total*100)}%`:"0%");
@@ -4299,11 +4301,22 @@ function exportExpenseTableCSV(){
 }
 function exportFullReportCSV(){
   const rows=[["報表類型","項目","金額/數量","日期","備註"]];
-  state.plants.forEach(p=>rows.push(["植物購買",p.name,Number(p.price)||0,p.acquireDate||"",p.species||""]));
-  (state.materials||[]).forEach(m=>{
-    (m.usageHistory||[]).forEach(u=>rows.push(["耗材使用",m.name,Number(u.cost)||0,u.date||"",`使用 ${u.qty||1} ${m.unit||""}`]));
+  state.plants.forEach(p=>rows.push(["植物購買",p.name,Math.round(Number(p.price)||0),p.acquireDate||"",p.species||""]));
+  (state.tools||[]).forEach(t=>{
+    const amount=Number(t.purchasedTotal) ?? ((Number(t.qty)||0)*(Number(t.unitCost)||0));
+    if(amount>0) rows.push(["工具",t.name,Math.round(amount),"",`目前庫存 ${t.qty||0} ${t.unit||""}；來源 ${t.source||"未填寫"}`]);
   });
-  state.sales.filter(s=>!s.voided).forEach(s=>rows.push(["銷售",s.target,Number(s.salePrice)||0,s.date||"",`成本 ${Number(s.cost)||0}；淨利潤 ${(Number(s.salePrice)||0)-(Number(s.cost)||0)}`]));
+  (state.materials||[]).forEach(m=>{
+    const history=Array.isArray(m.purchaseHistory)&&m.purchaseHistory.length
+      ? m.purchaseHistory
+      : [{date:"",qty:m.stock,unit:m.unit,totalCost:Number(m.purchaseTotalCost)||((Number(m.stock)||0)*(Number(m.unitCost)||0))}];
+    history.forEach(r=>{
+      const amount=Number(r.totalCost)||0;
+      if(amount>0) rows.push(["耗材採購",m.name,Math.round(amount),r.date||"",`購入 ${Number(r.qty)||0} ${r.unit||m.unit||""}`]);
+    });
+    (m.usageHistory||[]).forEach(u=>rows.push(["耗材使用",m.name,Math.round(Number(u.cost)||0),u.date||"",`使用 ${u.qty||1} ${m.unit||""}`]));
+  });
+  state.sales.filter(s=>!s.voided).forEach(s=>rows.push(["銷售",s.target,Math.round(Number(s.salePrice)||0),s.date||"",`成本 ${Math.round(Number(s.cost)||0)}；淨利潤 ${Math.round((Number(s.salePrice)||0)-(Number(s.cost)||0))}`]));
   state.compostBins.forEach(b=>(b.inputs||[]).forEach(i=>rows.push(["堆肥",i.material||"",Number(i.cost)||0,i.date||"",`${b.name||""}；${i.weight||0}g`])));
   downloadCSV(`植物管家_完整報表_${todayStr()}.csv`,rows);
   showToast("完整報表已下載", "fa-download");
@@ -4315,11 +4328,14 @@ function renderReports(){
   const compostCost = state.compostBins.reduce((s,x)=>
     s + (Array.isArray(x.inputs) ? x.inputs.reduce((a,i)=>a+(Number(i.cost)||0),0) : 0),0);
 
-  // 耗材：優先從耗材資料的成本欄位統計；若目前資料沒有成本，則顯示 0
-  // 耗材成本採「實際使用成本」計算：使用 1 罐就把該罐單價加入總成本，
-  // 不會因庫存小計下降而讓累計總成本反向下降。
+  // 耗材：改用「實際採購花費」計算（累計採購成本，不會因為用掉多少而減少），
+  // 這樣才能跟下方明細（每一筆採購紀錄）的加總對得起來。
   const consumableCost = (state.materials || []).reduce((s,x)=>
-    s + (Number(x.usedCost)||0),0);
+    s + (Number(x.purchaseTotalCost)||((Number(x.stock)||0)*(Number(x.unitCost)||0))),0);
+
+  // 工具：累計投入成本（使用 1 只會扣庫存數量，不會讓這筆花費跟著變少）
+  const toolCost = (state.tools || []).reduce((s,t)=>
+    s + (Number(t.purchasedTotal) ?? ((Number(t.qty)||0)*(Number(t.unitCost)||0))),0);
 
   // 盆器：從植物目前盆器/移動歷程中抓取可用價格欄位
   const potCost = state.plants.reduce((s,x)=>{
@@ -4330,15 +4346,16 @@ function renderReports(){
   const otherCost = Math.max(0, (state.expenses || []).reduce((s,x)=>s+(Number(x.amount)||0),0));
 
   const categories = [
-    {name:"植物購買", value:plantCost, icon:"fa-seedling"},
-    {name:"耗材", value:consumableCost, icon:"fa-toolbox"},
-    {name:"盆器", value:potCost, icon:"fa-box"},
-    {name:"堆肥", value:compostCost, icon:"fa-recycle"},
-    {name:"其他", value:otherCost, icon:"fa-ellipsis"}
+    {name:"植物購買", value:Math.round(plantCost), icon:"fa-seedling"},
+    {name:"工具", value:Math.round(toolCost), icon:"fa-screwdriver-wrench"},
+    {name:"耗材", value:Math.round(consumableCost), icon:"fa-toolbox"},
+    {name:"盆器", value:Math.round(potCost), icon:"fa-box"},
+    {name:"堆肥", value:Math.round(compostCost), icon:"fa-recycle"},
+    {name:"其他", value:Math.round(otherCost), icon:"fa-ellipsis"}
   ];
 
   const totalCost = categories.reduce((s,x)=>s+x.value,0);
-  const chartColors = ["#059669","#0ea5e9","#f59e0b","#8b5cf6","#78716c"];
+  const chartColors = ["#059669","#f97316","#0ea5e9","#f59e0b","#8b5cf6","#78716c"];
 
   // SVG 圓餅圖：不依賴第三方圖表套件
   let currentAngle = -90;
@@ -4389,7 +4406,7 @@ function renderReports(){
   const top = [...slices].sort((a,b)=>b.value-a.value)[0];
   const insight = top && top.value > 0
     ? `本期「${top.name}」支出最高，佔總花費 ${Math.round(top.pct*100)}%。`
-    : "目前尚無花費資料，新增植物、耗材、盆器或堆肥紀錄後會自動統計。";
+    : "目前尚無花費資料，新增植物、工具、耗材、盆器或堆肥紀錄後會自動統計。";
 
   document.getElementById("main-content").innerHTML = `
     <div class="space-y-5">
@@ -4480,7 +4497,7 @@ function renderReports(){
           <span class="text-[10px] text-stone-400">可點擊圓餅圖分類</span>
         </div>
         <div class="mt-4 rounded-2xl bg-stone-50 p-6 text-center text-xs text-stone-400">
-          點擊「植物購買、耗材、盆器、堆肥或其他」查看明細
+          點擊「植物購買、工具、耗材、盆器、堆肥或其他」查看明細
         </div>
       </section>
     </div>`;
@@ -4506,13 +4523,23 @@ function showExpenseCategory(category){
         if(amount>0) rows.push({title:i.material||"堆肥材料",sub:`${bin.name||"堆肥箱"} · ${i.date||"－"}`,amount,icon:"fa-recycle"});
       });
     });
-  }else if(category==="耗材"){
-    rows=(state.materials||[]).map(m=>({
-      title:m.name||m.material||"耗材",
-      sub:m.date||m.type||"耗材紀錄",
-      amount:Number(m.cost)||Number(m.price)||0,
-      icon:"fa-toolbox"
+  }else if(category==="工具"){
+    rows=(state.tools||[]).map(t=>({
+      title:t.name||"工具",
+      sub:t.source?`來源：${t.source}`:"未填寫來源",
+      amount:Number(t.purchasedTotal) ?? ((Number(t.qty)||0)*(Number(t.unitCost)||0)),
+      icon:"fa-screwdriver-wrench"
     })).filter(x=>x.amount>0);
+  }else if(category==="耗材"){
+    (state.materials||[]).forEach(m=>{
+      const history=Array.isArray(m.purchaseHistory)&&m.purchaseHistory.length
+        ? m.purchaseHistory
+        : [{date:"－",qty:m.stock,unit:m.unit,totalCost:Number(m.purchaseTotalCost)||((Number(m.stock)||0)*(Number(m.unitCost)||0))}];
+      history.forEach(r=>{
+        const amount=Number(r.totalCost)||0;
+        if(amount>0) rows.push({title:m.name||"耗材",sub:`${r.date||"－"} · 購入 ${Number(r.qty)||0}${r.unit||m.unit||""}`,amount,icon:"fa-toolbox"});
+      });
+    });
   }else if(category==="盆器"){
     state.plants.forEach(p=>{
       (p.moveHistory||[]).forEach(h=>{
@@ -4529,6 +4556,7 @@ function showExpenseCategory(category){
     })).filter(x=>x.amount>0);
   }
 
+  rows = rows.map(r=>({...r, amount:Math.round(r.amount)}));
   const total=rows.reduce((s,x)=>s+x.amount,0);
   box.innerHTML=`
     <div class="flex items-center justify-between gap-3">
@@ -5310,7 +5338,7 @@ render();
       const batches=Array.isArray(m.batches)?m.batches:[];
       const remainingValue=batches.reduce((sum,b)=>sum+(Number(b.remainingQty)||0)*(Number(b.unitCost)||0),0);
       const inStock=(Number(m.stock)||0)>0;
-      return { name:m.name, html:`<article class="material-card material-card-v3 ${inStock?'':'empty'}">
+      return { name:m.name, createdAt:m.createdAt||0, html:`<article class="material-card material-card-v3 ${inStock?'':'empty'}">
         <div class="material-card-v3-top">
           <div class="material-card-v3-name-wrap">
             <div class="material-card-v3-icon ${inStock?'':'empty'}">📦</div>
@@ -5350,7 +5378,7 @@ render();
       const qty=Number(t.qty)||0, low=qty<=1, empty=qty<=0;
       const unitCost=Number(t.unitCost)||0;
       const toolEmoji=empty?'🚫':'🔧';
-      return { name:t.name, html:`<article class="resource-tool-card tool-card-v3 ${low?'low':''} ${empty?'empty':''}">
+      return { name:t.name, createdAt:t.createdAt||0, html:`<article class="resource-tool-card tool-card-v3 ${low?'low':''} ${empty?'empty':''}">
         <div class="tool-card-v3-top">
           <div class="tool-card-v3-icon ${low?'low':''} ${empty?'empty':''}">
             ${toolEmoji}
@@ -5380,9 +5408,9 @@ render();
       </article>` };
     });
 
-    /* ===== 合併並依名稱排序，讓工具與耗材混合顯示在同一份清單中 ===== */
+    /* ===== 合併並排序：新增的項目排在最上面，其餘依名稱排序 ===== */
     const mergedCards = [...toolCardsRaw, ...materialCardsRaw]
-      .sort((a,b)=>String(a.name).localeCompare(String(b.name),'zh-Hant'))
+      .sort((a,b)=>(b.createdAt||0)-(a.createdAt||0) || String(a.name).localeCompare(String(b.name),'zh-Hant'))
       .map(c=>c.html).join('') || `<div class="resource-empty"><span style="font-size:22px;display:inline-block;margin-bottom:8px;">🧰</span><b>還沒有工具或耗材</b><span>新增第一項工具或採購，開始追蹤庫存與使用狀態。</span></div>`;
 
     root.innerHTML=`<div class="space-y-4 sm:space-y-6 fade-in">
@@ -5558,7 +5586,7 @@ render();
     if(el?.value==="__add_source__"){el.value="";openResourceSourceManager();}
   }
 
-  function addTool(){const name=document.getElementById('ext-tool-name').value.trim();if(!name){showToast('請輸入工具名稱','fa-circle-exclamation');return;} const unitSelect=document.getElementById('ext-tool-unit'); const custom=document.getElementById('ext-tool-custom-unit'); const unit=unitSelect?.value==='自訂'?(custom?.value.trim()||'個'):(unitSelect?.value||'個'); const qty=Number(document.getElementById('ext-tool-qty').value)||0; const unitCost=Number(document.getElementById('ext-tool-cost')?.value)||0; const source=document.getElementById('ext-tool-source')?.value.trim()||''; state.tools.push({id:uid('tl'),name,qty,unit,unitCost,source,purchasedTotal:qty*unitCost}); if(source){state.resourceSources=Array.isArray(state.resourceSources)?state.resourceSources:[]; if(!state.resourceSources.includes(source))state.resourceSources.push(source);} saveState(); showToast('已新增工具','fa-screwdriver-wrench'); render();}
+  function addTool(){const name=document.getElementById('ext-tool-name').value.trim();if(!name){showToast('請輸入工具名稱','fa-circle-exclamation');return;} const unitSelect=document.getElementById('ext-tool-unit'); const custom=document.getElementById('ext-tool-custom-unit'); const unit=unitSelect?.value==='自訂'?(custom?.value.trim()||'個'):(unitSelect?.value||'個'); const qty=Number(document.getElementById('ext-tool-qty').value)||0; const unitCost=Number(document.getElementById('ext-tool-cost')?.value)||0; const source=document.getElementById('ext-tool-source')?.value.trim()||''; state.tools.push({id:uid('tl'),name,qty,unit,unitCost,source,purchasedTotal:qty*unitCost,createdAt:Date.now()}); if(source){state.resourceSources=Array.isArray(state.resourceSources)?state.resourceSources:[]; if(!state.resourceSources.includes(source))state.resourceSources.push(source);} saveState(); showToast('已新增工具','fa-screwdriver-wrench'); render();}
   function useTool(id){const t=state.tools.find(x=>x.id===id);if(!t)return;t.qty=Math.max(0,(Number(t.qty)||0)-1);showToast(`工具「${t.name}」庫存 -1`,'fa-minus');render();}
   function openEditTool(id){
     const t=state.tools.find(x=>x.id===id); if(!t) return;
