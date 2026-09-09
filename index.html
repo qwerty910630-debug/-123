@@ -1247,6 +1247,11 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 }
 .tool-use-v3 i{font-size:9px!important;}
 .tool-use-v3:disabled{cursor:not-allowed!important;}
+.tool-restock-inline{display:flex!important;align-items:center!important;gap:6px!important;min-width:0!important;}
+.tool-restock-input{width:64px!important;height:38px!important;border-radius:11px!important;border:1px solid #dbe6e0!important;background:#fff!important;font-size:12px!important;text-align:center!important;padding:0 4px!important;color:#233f33!important;}
+.tool-restock-input:focus{outline:none!important;border-color:#38a169!important;box-shadow:0 0 0 2px rgba(56,161,105,.15)!important;}
+.tool-restock-btn{width:38px!important;height:38px!important;border-radius:11px!important;border:1px solid #b7e2c6!important;background:#eafbf1!important;color:#1f7a45!important;display:inline-flex!important;align-items:center!important;justify-content:center!important;font-size:12px!important;transition:background .15s!important,transform .15s!important;flex-shrink:0!important;}
+.tool-restock-btn:hover{background:#d6f5e2!important;transform:translateY(-1px)!important;}
 @media(max-width:1050px){
   .tool-grid-v3{grid-template-columns:repeat(2,minmax(0,1fr))!important;}
   .tool-form-v3-grid{grid-template-columns:1.25fr 90px 95px 100px 1fr!important;}
@@ -2304,6 +2309,41 @@ function addCompostInput(binId, materialName, weight){
   bin.inputs.push({material:materialName, weight:Number(weight), ratio, date: todayStr()});
 
   showToast("已記錄堆肥投入", "fa-recycle");
+  render();
+}
+/* 堆肥箱完成後：把成品併入耗材庫存，並移除原本的堆肥箱 */
+function finishCompostBin(binId){
+  const idx = state.compostBins.findIndex(b=>b.id===binId);
+  if(idx===-1) return;
+  const bin = state.compostBins[idx];
+  const totalWeight = (bin.inputs||[]).reduce((s,i)=>s+(Number(i.weight)||0),0);
+  const useKg = totalWeight >= 1000;
+  const stockQty = useKg ? Math.round((totalWeight/1000)*10)/10 : totalWeight;
+  const unit = useKg ? "公斤" : "g";
+  const finishedDate = bin.finishedDate || todayStr();
+  const source = `自製堆肥（${bin.type||"堆肥箱"}）`;
+  state.materials = Array.isArray(state.materials) ? state.materials : [];
+  const existing = state.materials.find(m=>m.name.trim()===bin.name.trim());
+  if(existing){
+    existing.batches = Array.isArray(existing.batches) ? existing.batches : [];
+    existing.batches.push({date:finishedDate, qty:stockQty, unit, remainingQty:stockQty, unitCost:0, totalCost:0});
+    existing.purchaseHistory = Array.isArray(existing.purchaseHistory) ? existing.purchaseHistory : [];
+    existing.purchaseHistory.push({date:finishedDate, qty:stockQty, unit, unitCost:0, totalCost:0});
+    existing.stock = existing.batches.reduce((sum,b)=>sum+(Number(b.remainingQty)||0),0);
+    existing.unit = unit || existing.unit;
+    existing.source = existing.source || source;
+  } else {
+    state.materials.push({
+      id:uid("mt"), name:bin.name, stock:stockQty, unit, unitCost:0,
+      purchaseTotalCost:0, usedQty:0, usedCost:0, usageHistory:[],
+      purchaseHistory:[{date:finishedDate, qty:stockQty, unit, unitCost:0, totalCost:0}],
+      batches:[{date:finishedDate, qty:stockQty, unit, remainingQty:stockQty, unitCost:0, totalCost:0}],
+      source, createdAt:Date.now()
+    });
+  }
+  state.compostBins.splice(idx,1);
+  showToast(`堆肥箱「${bin.name}」已完成，成品 ${stockQty}${unit} 已轉入耗材庫存`, "fa-recycle");
+  saveState();
   render();
 }
 function addCnPreset(name, ratio){
@@ -5479,7 +5519,11 @@ render();
         </div>
         <p class="material-card-v3-value">💰 剩餘庫存價值 $${(qty*unitCost).toLocaleString()}</p>
         <div class="tool-card-v3-divider"></div>
-        <div class="tool-card-v3-bottom tool-card-v3-bottom-end">
+        <div class="tool-card-v3-bottom">
+          <div class="tool-restock-inline">
+            <input type="number" min="0" id="tool-restock-${t.id}" class="tool-restock-input" placeholder="數量">
+            <button data-ext-action="tool-restock" data-id="${t.id}" title="新增庫存" class="tool-restock-btn"><i class="fa-solid fa-plus"></i></button>
+          </div>
           <button data-ext-action="tool-use" data-id="${t.id}" ${qty<=0?'disabled':''} class="resource-use-btn tool-use-v3">
             <span>－</span><span>${qty<=0?'已用完':'使用 1'}</span>
           </button>
@@ -5644,6 +5688,19 @@ render();
 
   function addTool(){const name=document.getElementById('ext-tool-name').value.trim();if(!name){showToast('請輸入工具名稱','fa-circle-exclamation');return;} const unitSelect=document.getElementById('ext-tool-unit'); const custom=document.getElementById('ext-tool-custom-unit'); const unit=unitSelect?.value==='自訂'?(custom?.value.trim()||'個'):(unitSelect?.value||'個'); const qty=Number(document.getElementById('ext-tool-qty').value)||0; const unitCost=Number(document.getElementById('ext-tool-cost')?.value)||0; const source=document.getElementById('ext-tool-source')?.value.trim()||''; state.tools.push({id:uid('tl'),name,qty,unit,unitCost,source,purchasedTotal:qty*unitCost,createdAt:Date.now()}); if(source){state.resourceSources=Array.isArray(state.resourceSources)?state.resourceSources:[]; if(!state.resourceSources.includes(source))state.resourceSources.push(source);} saveState(); showToast('已新增工具','fa-screwdriver-wrench'); render();}
   function useTool(id){const t=state.tools.find(x=>x.id===id);if(!t)return;t.qty=Math.max(0,(Number(t.qty)||0)-1);showToast(`工具「${t.name}」庫存 -1`,'fa-minus');render();}
+  /* 工具缺貨快速補貨：同一個工具重複新增時，直接加進原本的數量，不會另外產生一筆新工具 */
+  function restockToolInline(id){
+    const t=state.tools.find(x=>x.id===id); if(!t) return;
+    const input=document.getElementById(`tool-restock-${id}`);
+    const addQty=Math.max(0, Number(input?.value)||0);
+    if(addQty<=0){ showToast('請輸入大於 0 的數量','fa-circle-exclamation'); input?.focus(); return; }
+    t.qty=(Number(t.qty)||0)+addQty;
+    t.purchasedTotal=(Number(t.purchasedTotal)||0)+addQty*(Number(t.unitCost)||0);
+    saveState();
+    if(input) input.value='';
+    showToast(`工具「${t.name}」已新增 ${addQty} ${t.unit||'個'}`,'fa-plus');
+    render();
+  }
   function openEditTool(id){
     const t=state.tools.find(x=>x.id===id); if(!t) return;
     const root=document.getElementById('modal-root'); if(!root) return;
@@ -5746,6 +5803,7 @@ render();
       else if(a==='add-tool') addTool();
       else if(a==='open-source-manager') openResourceSourceManager();
       else if(a==='tool-use') useTool(el.dataset.id);
+      else if(a==='tool-restock') restockToolInline(el.dataset.id);
       else if(a==='edit-tool') openEditTool(el.dataset.id);
       else if(a==='submit-edit-tool') submitEditTool(el.dataset.id);
       else if(a==='edit-material') openEditMaterial(el.dataset.id);
@@ -5780,7 +5838,7 @@ render();
   document.addEventListener('change',async function(e){
     const toolUnit=e.target.closest('#ext-tool-unit');
     if(toolUnit){ const custom=document.getElementById('ext-tool-custom-unit'); if(custom) custom.classList.toggle('hidden', toolUnit.value!=='自訂'); }
-    const field=e.target.closest('[data-compost-field]');if(field){const b=state.compostBins.find(x=>x.id===field.dataset.id);if(b){b[field.dataset.compostField]=field.value; if(field.dataset.compostField==='humidity')b.humidity=Number(field.value)||0;extSave();showToast('堆肥資料已更新','fa-recycle');}}
+    const field=e.target.closest('[data-compost-field]');if(field){if(field.dataset.compostField==='status'&&field.value==='完成'){finishCompostBin(field.dataset.id);return;} const b=state.compostBins.find(x=>x.id===field.dataset.id);if(b){b[field.dataset.compostField]=field.value; if(field.dataset.compostField==='humidity')b.humidity=Number(field.value)||0;extSave();showToast('堆肥資料已更新','fa-recycle');}}
     const matUnit=e.target.closest('[data-material-unit-select]');
     if(matUnit){
       const m=state.materials.find(x=>x.id===matUnit.dataset.id);
