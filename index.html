@@ -2208,10 +2208,51 @@ function submitEditMaterialUnit(id){
   render();
 }
 
+/* 清掉「工具」與「耗材」裡同名重複的項目：把耗材的數量併入同名工具後移除耗材那筆，避免清單顯示兩次 */
+function mergeDuplicateToolMaterialEntries(){
+  if(!Array.isArray(state.tools) || !Array.isArray(state.materials)) return;
+  let changed=false;
+  state.tools.forEach(t=>{
+    const name=(t.name||"").trim();
+    if(!name) return;
+    for(let i=state.materials.length-1;i>=0;i--){
+      const m=state.materials[i];
+      if(m.fromCompost) continue;
+      if((m.name||"").trim()===name){
+        const addQty=Number(m.stock)||0;
+        const addCost=Number(m.purchaseTotalCost)||(addQty*(Number(m.unitCost)||0));
+        t.qty=(Number(t.qty)||0)+addQty;
+        t.purchasedTotal=(Number(t.purchasedTotal)||0)+addCost;
+        if(!String(t.source||"").trim() && String(m.source||"").trim()) t.source=m.source;
+        state.materials.splice(i,1);
+        changed=true;
+      }
+    }
+  });
+  if(changed) saveState();
+}
+
 function purchaseMaterialSubmit(name, qty, unit, cost, force, source=""){
   const quantity = Math.max(0, Number(qty)||0);
   const unitCost = Math.max(0, Number(cost)||0);
   if(quantity<=0){ showToast("請輸入大於 0 的採購數量", "fa-circle-exclamation"); return; }
+  /* 若名稱與現有「工具」相同，直接把數量加進該工具，避免同名項目在工具與耗材清單裡重複出現 */
+  const existingTool = state.tools.find(t=>t.name.trim()===name.trim());
+  if(existingTool){
+    existingTool.qty = (Number(existingTool.qty)||0) + quantity;
+    existingTool.unitCost = unitCost || existingTool.unitCost;
+    existingTool.purchasedTotal = (Number(existingTool.purchasedTotal)||0) + quantity*unitCost;
+    if(String(source||"").trim()){
+      existingTool.source = String(source).trim();
+      state.resourceSources = Array.isArray(state.resourceSources) ? state.resourceSources : [];
+      if(!state.resourceSources.includes(existingTool.source)) state.resourceSources.push(existingTool.source);
+    }
+    closeModal();
+    showToast(`工具「${existingTool.name}」已新增 ${quantity} ${unit||existingTool.unit||"單位"}`, "fa-screwdriver-wrench");
+    saveState();
+    render();
+    return;
+  }
   const existing = state.materials.find(m=>m.name.trim()===name.trim());
   const existingStock = existing ? (Number(existing.stock)||0) : 0;
   if(existing && existingStock > 0 && !force){
@@ -2332,13 +2373,14 @@ function finishCompostBin(binId){
     existing.stock = existing.batches.reduce((sum,b)=>sum+(Number(b.remainingQty)||0),0);
     existing.unit = unit || existing.unit;
     existing.source = existing.source || source;
+    existing.fromCompost = true;
   } else {
     state.materials.push({
       id:uid("mt"), name:bin.name, stock:stockQty, unit, unitCost:0,
       purchaseTotalCost:0, usedQty:0, usedCost:0, usageHistory:[],
       purchaseHistory:[{date:finishedDate, qty:stockQty, unit, unitCost:0, totalCost:0}],
       batches:[{date:finishedDate, qty:stockQty, unit, remainingQty:stockQty, unitCost:0, totalCost:0}],
-      source, createdAt:Date.now()
+      source, createdAt:Date.now(), fromCompost:true
     });
   }
   state.compostBins.splice(idx,1);
@@ -5165,6 +5207,7 @@ render();
       p.events = Array.isArray(p.events) ? p.events : [];
       p.photos = Array.isArray(p.photos) ? p.photos : [];
     });
+    mergeDuplicateToolMaterialEntries();
     LOCATIONS = [...new Set((state.locations && state.locations.length ? state.locations : DEFAULT_LOCATIONS).map(String))];
     // 移除舊版本的「鹿角蕨專區」入口；其他功能維持不變
     for(let i=NAV.length-1;i>=0;i--){
@@ -5485,7 +5528,11 @@ render();
         <p class="material-card-v3-value">💰 剩餘庫存價值 $${remainingValue.toLocaleString()}</p>
 
         <div class="tool-card-v3-divider"></div>
-        <div class="tool-card-v3-bottom tool-card-v3-bottom-end">
+        <div class="tool-card-v3-bottom ${m.fromCompost?'tool-card-v3-bottom-end':''}">
+          ${m.fromCompost?'':`<div class="tool-restock-inline">
+            <input type="number" min="0" id="material-restock-${m.id}" class="tool-restock-input" placeholder="數量">
+            <button data-ext-action="material-restock" data-id="${m.id}" title="新增庫存" class="tool-restock-btn"><i class="fa-solid fa-plus"></i></button>
+          </div>`}
           <button data-action="use-material" data-id="${m.id}" ${inStock?'':'disabled'} class="material-use-v3">
             <span>－</span><span>使用 1</span>
           </button>
@@ -5701,6 +5748,16 @@ render();
     showToast(`工具「${t.name}」已新增 ${addQty} ${t.unit||'個'}`,'fa-plus');
     render();
   }
+  /* 耗材缺貨快速補貨：沿用既有的採購批次邏輯（同名會合併，不會重複建立） */
+  function restockMaterialInline(id){
+    const m=state.materials.find(x=>x.id===id); if(!m) return;
+    if(m.fromCompost){ showToast('堆肥製成的耗材不開放手動加量','fa-circle-exclamation'); return; }
+    const input=document.getElementById(`material-restock-${id}`);
+    const addQty=Math.max(0, Number(input?.value)||0);
+    if(addQty<=0){ showToast('請輸入大於 0 的數量','fa-circle-exclamation'); input?.focus(); return; }
+    if(input) input.value='';
+    purchaseMaterialSubmit(m.name, addQty, m.unit, Number(m.unitCost)||0, true, m.source||'');
+  }
   function openEditTool(id){
     const t=state.tools.find(x=>x.id===id); if(!t) return;
     const root=document.getElementById('modal-root'); if(!root) return;
@@ -5804,6 +5861,7 @@ render();
       else if(a==='open-source-manager') openResourceSourceManager();
       else if(a==='tool-use') useTool(el.dataset.id);
       else if(a==='tool-restock') restockToolInline(el.dataset.id);
+      else if(a==='material-restock') restockMaterialInline(el.dataset.id);
       else if(a==='edit-tool') openEditTool(el.dataset.id);
       else if(a==='submit-edit-tool') submitEditTool(el.dataset.id);
       else if(a==='edit-material') openEditMaterial(el.dataset.id);
