@@ -2363,13 +2363,44 @@ function findVoiceResourceMatch(text){
   return null;
 }
 function parseVoiceCommand(text){
-  const amountMatch = text.match(/(\d+)\s*元/);
-  const amount = amountMatch ? Number(amountMatch[1]) : null;
   let action = "未知";
   if(/買|購入/.test(text)) action = "購入";
   else if(/賣|售出/.test(text)) action = "售出";
   else if(/澆水/.test(text)) action = "澆水";
 
+  // 優先嘗試整句一次抓出「(數量)(單位) 名稱 金額元」，例如「買了兩盆百合花300元」，
+  // 這樣就算是資料庫裡從沒出現過的全新品種，也能直接用語音講出的名稱建檔，不用先手動新增過一次。
+  const purchaseMatch = action==="購入"
+    ? text.match(/(?:買了|購入)\s*([0-9零〇一二兩三四五六七八九十百千萬億]+)?\s*(盆|株|棵|朵|顆|包|罐|瓶|個)?\s*([\u4e00-\u9fffA-Za-z0-9]+?)\s*([0-9]+)\s*(?:元|塊|块)?[。.!！]?\s*$/)
+    : null;
+
+  if(purchaseMatch){
+    const qtyRaw = purchaseMatch[1] ? Number(chineseNumberToArabic(purchaseMatch[1])) : 1;
+    const qty = qtyRaw>0 ? qtyRaw : 1;
+    const nameGuess = purchaseMatch[3];
+    const amount = Number(purchaseMatch[4]) || null;
+
+    // 先確認講的是不是現有的工具／耗材品項
+    const resourceMatch = findVoiceResourceMatch(text);
+    if(resourceMatch){
+      const unit = purchaseMatch[2] || resourceMatch.item.unit || "個";
+      return { ambiguous:false, type:"resource", resourceKind:resourceMatch.kind, resourceId:resourceMatch.item.id, resourceName:resourceMatch.item.name, action, amount, qty, unit, rawText:text };
+    }
+
+    // 否則當成新一批植物購入：不論品種資料庫裡有沒有，都用講出來的名稱建檔
+    const candidates = state.plants.filter(p=>p.species===nameGuess && p.status==="存活");
+    const hints = { "窗台":"窗邊", "門口":"門口", "角落":"角落" };
+    const hintKey = Object.keys(hints).find(h=>text.includes(h));
+    if(candidates.length>1 && !hintKey){
+      return { ambiguous:true, type:"plant", species:nameGuess, candidates, action, amount, qty, rawText:text };
+    }
+    const target = hintKey ? (candidates.find(c=>c.location.includes(hints[hintKey])) || candidates[0]) : candidates[0];
+    return { ambiguous:false, type:"plant", species:nameGuess, target, action, amount, qty, rawText:text };
+  }
+
+  // 備援：句型不完全符合上面的格式時，退回舊有邏輯（只認資料庫裡已存在的品種名稱）。
+  const amountMatch = text.match(/(\d+)\s*(?:元|塊|块)?[。.!！]?\s*$/);
+  const amount = amountMatch ? Number(amountMatch[1]) : null;
   const knownNames = [...new Set(state.plants.map(p=>p.species))];
   const matchedSpecies = knownNames.find(n=>text.includes(n));
 
@@ -2378,10 +2409,10 @@ function parseVoiceCommand(text){
     const hints = { "窗台":"窗邊", "門口":"門口", "角落":"角落" };
     const hintKey = Object.keys(hints).find(h=>text.includes(h));
     if(candidates.length>1 && !hintKey){
-      return { ambiguous:true, type:"plant", species:matchedSpecies, candidates, action, amount, rawText:text };
+      return { ambiguous:true, type:"plant", species:matchedSpecies, candidates, action, amount, qty:1, rawText:text };
     }
     const target = hintKey ? (candidates.find(c=>c.location.includes(hints[hintKey])) || candidates[0]) : candidates[0];
-    return { ambiguous:false, type:"plant", species:matchedSpecies, target, action, amount, rawText:text };
+    return { ambiguous:false, type:"plant", species:matchedSpecies, target, action, amount, qty:1, rawText:text };
   }
 
   // 語音新增工具／耗材：句子裡出現「購入」＋金額＋現有工具或耗材名稱時，視為一筆新採購。
@@ -2394,7 +2425,7 @@ function parseVoiceCommand(text){
       return { ambiguous:false, type:"resource", resourceKind:resourceMatch.kind, resourceId:resourceMatch.item.id, resourceName:resourceMatch.item.name, action, amount, qty, unit, rawText:text };
     }
   }
-  return { ambiguous:false, type:"plant", species:null, target:null, action, amount, rawText:text };
+  return { ambiguous:false, type:"plant", species:null, target:null, action, amount, qty:1, rawText:text };
 }
 function restockToolFromVoice(id, qty, unitCost, source){
   const t = state.tools.find(x=>x.id===id);
@@ -2427,9 +2458,17 @@ function confirmVoiceEntry(){
     return;
   }
   if(parsed.action==="購入" && parsed.amount){
-    addPlant({ name:parsed.species||"語音建檔植物", species:parsed.species,
-      source: state.markets[0]?.id, price:parsed.amount, acquireDate: todayStr(),
-      location: LOCATIONS[0], potSize:4 });
+    const qty = Math.max(1, Number(parsed.qty)||1);
+    const unitPrice = qty>1 ? Math.round((Number(parsed.amount)||0)/qty) : (Number(parsed.amount)||0);
+    for(let i=0;i<qty;i++){
+      addPlant({ name:parsed.species||"語音建檔植物", species:parsed.species,
+        source: state.markets[0]?.id, price:unitPrice, acquireDate: todayStr(),
+        location: LOCATIONS[0], potSize:4 });
+    }
+    showToast(qty>1?`已新增 ${qty} 株「${parsed.species||"植物"}」`:"語音資料已確認寫入資料庫", "fa-check");
+    state.voice = { text:"", listening:false, parsed:null, queryText: state.voice.queryText, queryResult: state.voice.queryResult };
+    render();
+    return;
   }
 
 
@@ -4235,6 +4274,7 @@ function renderVoice(){
       <p>動作：<b>${p.action}</b> · 品項：<b>${esc(p.type==="resource"?p.resourceName:(p.species||"未辨識"))}</b> · 金額：<b>${p.amount??"未辨識"}</b></p>
       ${p.target?`<p class="text-stone-400 text-xs">對應植物：${esc(p.target.name)}（${esc(p.target.location)}）</p>`:""}
       ${p.type==="resource"?`<p class="text-stone-400 text-xs">將新增採購：${esc(p.resourceName)} × ${p.qty}${esc(p.unit)}（單價約 $${p.qty?Math.round(p.amount/p.qty):p.amount}，${p.resourceKind==="tool"?"工具":"耗材"}）</p>`:""}
+      ${p.type==="plant" && p.action==="購入" && p.amount && Number(p.qty)>1?`<p class="text-stone-400 text-xs">將新增 ${p.qty} 株「${esc(p.species||"植物")}」，每株約 $${Math.round(p.amount/p.qty)}（共 $${p.amount}）</p>`:""}
       <div class="flex justify-end gap-2 mt-2">
         <button data-action="cancel-voice-parse" class="bg-white text-stone-600 border border-stone-200 px-3 py-1.5 text-xs rounded-xl font-medium transition-all duration-300 hover:scale-105 active:scale-95">取消</button>
         <button data-action="confirm-voice" class="bg-gradient-to-r from-emerald-500 to-emerald-700 text-white px-3 py-1.5 text-xs rounded-xl font-medium shadow-md transition-all duration-300 hover:scale-105 active:scale-95"><i class="fa-solid fa-check"></i> 確認送出</button>
